@@ -1,6 +1,75 @@
 = nbtfile
 
-Description goes here.
+NBTFile is a low-level library for reading and writing
+NBT-format files, as used by the popular game Minecraft.
+
+== Grammar
+
+NBT files are gzip-compressed; the structure of the
+uncompressed data can be described by the following
+ABNF (see RFC 5234).
+
+ nbt-data = tag-compound
+
+ tag = TYPE-BYTE name byte /
+       TYPE-SHORT name short /
+       TYPE-INT name int /
+       TYPE-LONG name long /
+       TYPE-FLOAT name float /
+       TYPE-DOUBLE name double /
+       TYPE-STRING name string /
+       TYPE-BYTE-ARRAY name byte-array /
+       TYPE-LIST name list /
+       tag-compound
+
+ tag-compound = TYPE-COMPOUND name compound-body
+
+ name = string
+
+ list = TYPE-END list-length /
+        TYPE-BYTE list-length *byte /
+        TYPE-SHORT list-length *short /
+        TYPE-INT list-length *int /
+        TYPE-LONG list-length *long /
+        TYPE-FLOAT list-length *float /
+        TYPE-DOUBLE list-length *double /
+        TYPE-STRING list-length *string /
+        TYPE-BYTE-ARRAY list-length *byte-array /
+        TYPE-LIST list-length *list /
+        TYPE-COMPOUND list-length *compound-body
+
+ compound-body = *tag TYPE-END
+
+ list-length = int
+
+ ; see RFC 3629 for definition of UTF8-octets
+ string = string-length UTF8-octets
+
+ string-length = short
+
+ byte = OCTET ; 8-bit signed integer
+
+ short = 2OCTET ; 16-bit signed integer, big-endian
+
+ int = 4OCTET ; 32-bit signed integer, big-endian
+
+ long = 8OCTET ; 64-bit signed integer, big-endian
+
+ float = 2OCTET ; 32-bit float, big-endian, IEEE 754-2008
+
+ double = 4OCTET ; 64-bit float, big-endian, IEEE 754-2008
+
+ TYPE-END = %x00
+ TYPE-BYTE = %x01
+ TYPE-SHORT = %x02
+ TYPE-INT = %x03
+ TYPE-LONG = %x04
+ TYPE-FLOAT = %x05
+ TYPE-DOUBLE = %x06
+ TYPE-BYTE-ARRAY = %x07
+ TYPE-STRING = %x08
+ TYPE-LIST = %x09
+ TYPE-COMPOUND = %x0a
 
 == Note on Patches/Pull Requests
  
