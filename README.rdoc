@@ -22,9 +22,9 @@ ABNF (see RFC 5234).
        TYPE-LIST name list /
        tag-compound
 
- tag-compound = TYPE-COMPOUND name compound-body
-
  name = string
+
+ tag-compound = TYPE-COMPOUND name compound-body
 
  list = TYPE-BYTE list-length *byte /
         TYPE-SHORT list-length *short /
