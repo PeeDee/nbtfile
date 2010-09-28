@@ -251,9 +251,42 @@ class Reader
     @state, tag = @state.read_tag(@gz)
     tag
   end
+
 end
 
 class Writer
+end
+
+def self.load(io)
+  case io
+  when String
+    io = StringIO.new(io, "rb")
+  end
+
+  reader = Reader.new(io)
+  root = {}
+  stack = [root]
+
+  reader.each_tag do |type, name, value|
+    case type
+    when :tag_compound
+      value = {}
+    when :tag_list
+      value = []
+    when :tag_end
+      stack.pop
+      next
+    end
+
+    stack.last[name] = value
+
+    case type
+    when :tag_compound, :tag_list
+      stack.push value
+    end
+  end
+
+  root
 end
 
 end
