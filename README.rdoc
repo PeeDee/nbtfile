@@ -37,9 +37,9 @@ ABNF (see RFC 5234).
         TYPE-LIST list-length *list /
         TYPE-COMPOUND list-length *compound-body
 
- compound-body = *tag TYPE-END
-
  list-length = int
+
+ compound-body = *tag TYPE-END
 
  ; see RFC 3629 for definition of UTF8-octets
  string = string-length UTF8-octets
