@@ -26,16 +26,16 @@ describe NBTFile::Reader do
   a_reader "should parse basic documents",
            "\x0a\x00\x03foo" \
            "\x00",
-           [[:start_compound, "foo"],
-            [:end]]
+           [[:tag_compound, "foo"],
+            [:tag_end]]
 
   a_reader "should parse integer fields",
            "\x0a\x00\x03foo" \
            "\x04\x00\x03bar\x01\x02\x03\x04" \
            "\x00",
-           [[:start_compound, "foo"],
-            [:int, "bar", 0x01020304],
-            [:end]]
+           [[:tag_compound, "foo"],
+            [:tag_int, "bar", 0x01020304],
+            [:tag_end]]
 end
 
 describe NBTFile::Writer do

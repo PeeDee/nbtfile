@@ -62,12 +62,12 @@ class Reader
       name = read_string() if type != TYPE_END
       case type
       when TYPE_COMPOUND
-        yield [:start_compound, name]
+        yield [:tag_compound, name]
       when TYPE_INT
         value = read_int()
-        yield [:int, name, value]
+        yield [:tag_int, name, value]
       when TYPE_END
-        yield [:end]
+        yield [:tag_end]
         break
       end
     end
