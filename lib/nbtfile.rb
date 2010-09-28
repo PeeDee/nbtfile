@@ -127,6 +127,8 @@ class Reader
       value = read_byte()
     when :tag_int
       value = read_int()
+    when :tag_string
+      value = read_string()
     when :tag_byte_array
       value = read_byte_array()
     else
