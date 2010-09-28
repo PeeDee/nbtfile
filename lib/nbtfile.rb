@@ -90,6 +90,14 @@ class Reader
     read_integer(8)
   end
 
+  def read_float
+    read_raw(4).unpack("g").first
+  end
+
+  def read_double
+    read_raw(8).unpack("G").first
+  end
+
   def read_string
     length = read_short()
     string = read_raw(length)
@@ -131,6 +139,10 @@ class Reader
       value = read_long()
     when :tag_string
       value = read_string()
+    when :tag_float
+      value = read_float()
+    when :tag_double
+      value = read_double()
     when :tag_byte_array
       value = read_byte_array()
     else

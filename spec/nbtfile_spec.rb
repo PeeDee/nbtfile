@@ -68,6 +68,22 @@ describe NBTFile::Reader do
            [[:tag_compound, "foo", nil],
             [:tag_long, "bar", 0x0102030405060708],
             [:tag_end, "", nil]]
+
+  a_reader "should parse float fields",
+           "\x0a\x00\x03foo" \
+           "\x05\x00\x03bar\x3f\xa0\x00\x00" \
+           "\x00",
+           [[:tag_compound, "foo", nil],
+            [:tag_float, "bar", "\x3f\xa0\x00\x00".unpack("g").first],
+            [:tag_end, "", nil]]
+
+  a_reader "should parse double fields",
+           "\x0a\x00\x03foo" \
+           "\x06\x00\x03bar\x3f\xf4\x00\x00\x00\x00\x00\x00" \
+           "\x00",
+           [[:tag_compound, "foo", nil],
+            [:tag_double, "bar", "\x3f\xf4\x00\x00\x00\x00\x00\x00".unpack("G").first],
+            [:tag_end, "", nil]]
 end
 
 describe NBTFile::Writer do
