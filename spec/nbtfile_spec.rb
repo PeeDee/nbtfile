@@ -84,6 +84,18 @@ describe NBTFile::Reader do
            [[:tag_compound, "foo", nil],
             [:tag_double, "bar", "\x3f\xf4\x00\x00\x00\x00\x00\x00".unpack("G").first],
             [:tag_end, "", nil]]
+
+  a_reader "should parse nested compound fields",
+           "\x0a\x00\x03foo" \
+           "\x0a\x00\x03bar" \
+           "\x01\x00\x04hoge\x4e" \
+           "\x00" \
+           "\x00",
+           [[:tag_compound, "foo", nil],
+            [:tag_compound, "bar", nil],
+            [:tag_byte, "hoge", 0x4e],
+            [:tag_end, "", nil],
+            [:tag_end, "", nil]]
 end
 
 describe NBTFile::Writer do
