@@ -23,6 +23,14 @@
 
 require 'zlib'
 
+class String
+  begin
+    alias_method :_nbtfile_getbyte, :getbyte
+  rescue NameError
+    alias_method :_nbtfile_getbyte, :[]
+  end
+end
+
 module NBTFile
 
 TYPES = [
@@ -44,27 +52,40 @@ class Reader
     @gz = Zlib::GzipReader.new(io)
   end
 
+  def read_raw(n_bytes)
+    data = @gz.read(n_bytes)
+    raise EOFError unless data and data.length == n_bytes
+    data
+  end
+
+  def read_integer(n_bytes)
+    raw_value = read_raw(n_bytes)
+    value = (0...n_bytes).reduce(0) do |accum, n|
+      (accum << 8) | raw_value._nbtfile_getbyte(n)
+    end
+    value -= (value & (0x80 << ((n_bytes - 1) << 3)))
+    value
+  end
+
   def read_byte
-    @gz.read(1).unpack("c")[0]
+    read_integer(1)
   end
 
   def read_short
-    value = @gz.read(2).unpack("n")[0]
-    value -= (value & 0x8000)
-    value
+    read_integer(2)
   end
 
   def read_int
-    value = @gz.read(4).unpack("N")[0]
-    value -= (value & 0x80000000)
-    value
+    read_integer(4)
+  end
+
+  def read_long
+    read_integer(8)
   end
 
   def read_string
     length = read_short()
-    content = @gz.read(length)
-    # TODO: verify content length
-    content
+    read_raw(length)
   end
 
   def each_tag
