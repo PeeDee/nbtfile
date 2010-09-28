@@ -96,6 +96,19 @@ describe NBTFile::Reader do
             [:tag_byte, "hoge", 0x4e],
             [:tag_end, "", nil],
             [:tag_end, "", nil]]
+
+  a_reader "should parse list of simple type",
+           "\x0a\x00\x03foo" \
+           "\x09\x00\x03bar\x01\x00\x00\x00\x02" \
+           "\x7f" \
+           "\x3a" \
+           "\x00",
+           [[:tag_compound, "foo", nil],
+            [:tag_list, "bar", :tag_byte],
+            [:tag_byte, nil, 0x7f],
+            [:tag_byte, nil, 0x3a],
+            [:tag_end, nil, nil],
+            [:tag_end, "", nil]] 
 end
 
 describe NBTFile::Writer do

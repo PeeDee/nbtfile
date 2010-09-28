@@ -54,19 +54,15 @@ TYPES = [
   :tag_compound
 ]
 
-class Reader
-  def initialize(io)
-    @gz = Zlib::GzipReader.new(io)
-  end
-
-  def read_raw(n_bytes)
-    data = @gz.read(n_bytes)
+module ReadMethods
+  def read_raw(io, n_bytes)
+    data = io.read(n_bytes)
     raise EOFError unless data and data.length == n_bytes
     data
   end
 
-  def read_integer(n_bytes)
-    raw_value = read_raw(n_bytes)
+  def read_integer(io, n_bytes)
+    raw_value = read_raw(io, n_bytes)
     value = (0...n_bytes).reduce(0) do |accum, n|
       (accum << 8) | raw_value._nbtfile_getbyte(n)
     end
@@ -74,40 +70,170 @@ class Reader
     value
   end
 
-  def read_byte
-    read_integer(1)
+  def read_byte(io)
+    read_integer(io, 1)
   end
 
-  def read_short
-    read_integer(2)
+  def read_short(io)
+    read_integer(io, 2)
   end
 
-  def read_int
-    read_integer(4)
+  def read_int(io)
+    read_integer(io, 4)
   end
 
-  def read_long
-    read_integer(8)
+  def read_long(io)
+    read_integer(io, 8)
   end
 
-  def read_float
-    read_raw(4).unpack("g").first
+  def read_float(io)
+    read_raw(io, 4).unpack("g").first
   end
 
-  def read_double
-    read_raw(8).unpack("G").first
+  def read_double(io)
+    read_raw(io, 8).unpack("G").first
   end
 
-  def read_string
-    length = read_short()
-    string = read_raw(length)
+  def read_string(io)
+    length = read_short(io)
+    string = read_raw(io, length)
     string._nbtfile_force_encoding("UTF-8")
     string
   end
 
-  def read_byte_array
-    length = read_int()
-    read_raw(length)
+  def read_byte_array(io)
+    length = read_int(io)
+    read_raw(io, length)
+  end
+
+  def read_list_header(io)
+    list_type = read_type(io)
+    list_length = read_int(io)
+    [list_type, list_length]
+  end
+
+  def read_type(io)
+    TYPES[read_byte(io)]
+  end
+end
+
+class TopReaderState
+  include ReadMethods
+
+  def read_tag(io)
+    type = read_type(io)
+    raise RuntimeError, "expected TAG_Compound" unless type == :tag_compound
+    name = read_string(io)
+    end_state = EndReaderState.new()
+    next_state = CompoundReaderState.new(end_state)
+    [next_state, [type, name, nil]]
+  end
+end
+
+class CompoundReaderState
+  include ReadMethods
+
+  def initialize(parent)
+    @parent = parent
+  end
+
+  def read_tag(io)
+    type = read_type(io)
+
+    if type != :tag_end
+      name = read_string(io)
+    else
+      name = ""
+    end
+
+    next_state = self
+
+    case type
+    when :tag_end
+      value = nil
+      next_state = @parent
+    when :tag_byte
+      value = read_byte(io)
+    when :tag_int
+      value = read_int(io)
+    when :tag_long
+      value = read_long(io)
+    when :tag_string
+      value = read_string(io)
+    when :tag_float
+      value = read_float(io)
+    when :tag_double
+      value = read_double(io)
+    when :tag_byte_array
+      value = read_byte_array(io)
+    when :tag_list
+      list_type, list_length = read_list_header(io)
+      next_state = ListReaderState.new(self, list_type, list_length)
+      value = list_type
+    when :tag_compound
+      next_state = CompoundReaderState.new(self)
+      value = nil
+    end
+
+    [next_state, [type, name, value]]
+  end
+end
+
+class ListReaderState
+  include ReadMethods
+
+  def initialize(parent, type, length)
+    @parent = parent
+    @length = length
+    @type = type
+  end
+
+  def read_tag(io)
+    return [@parent, [:tag_end, nil, nil]] unless @length > 0
+
+    next_state = self
+
+    case @type
+    when :tag_byte
+      value = read_byte(io)
+    when :tag_short
+      value = read_short(io)
+    when :tag_int
+      value = read_int(io)
+    when :tag_long
+      value = read_long(io)
+    when :tag_float
+      value = read_float(io)
+    when :tag_double
+      value = read_double(io)
+    when :tag_string
+      value = read_string(io)
+    when :tag_byte_array
+      value = read_byte_array(io)
+    when :tag_list
+      list_type, list_length = read_list_header(io)
+      next_state = ListReaderState.new(self, list_type, list_length)
+      value = list_type
+    when :tag_compound
+      next_state = CompoundReaderState.new(self)
+      value = nil
+    end
+    @length -= 1
+
+    [next_state, [@type, nil, value]]
+  end
+end
+
+class EndReaderState
+  def read_tag(io)
+    [self, nil]
+  end
+end
+
+class Reader
+  def initialize(io)
+    @gz = Zlib::GzipReader.new(io)
+    @state = TopReaderState.new()
   end
 
   def each_tag
@@ -117,43 +243,10 @@ class Reader
   end
 
   def read_tag
-    begin
-      type = read_byte()
-    rescue EOFError
-      return nil
-    end
-    type = TYPES[type]
-
-    if type != :tag_end
-      name = read_string()
-    else
-      name = ""
-    end
-
-    case type
-    when :tag_byte
-      value = read_byte()
-    when :tag_int
-      value = read_int()
-    when :tag_long
-      value = read_long()
-    when :tag_string
-      value = read_string()
-    when :tag_float
-      value = read_float()
-    when :tag_double
-      value = read_double()
-    when :tag_byte_array
-      value = read_byte_array()
-    else
-      value = nil
-    end
-
-    [type, name, value]
+    @state, tag = @state.read_tag(@gz)
+    tag
   end
 end
-
-
 
 class Writer
 end
