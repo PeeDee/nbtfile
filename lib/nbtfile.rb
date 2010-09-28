@@ -119,7 +119,7 @@ class Reader
     if type != :tag_end
       name = read_string()
     else
-      name = nil
+      name = ""
     end
 
     case type

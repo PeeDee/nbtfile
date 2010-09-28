@@ -27,7 +27,7 @@ describe NBTFile::Reader do
            "\x0a\x00\x03foo" \
            "\x00",
            [[:tag_compound, "foo", nil],
-            [:tag_end, nil, nil]]
+            [:tag_end, "", nil]]
 
   a_reader "should parse integer fields",
            "\x0a\x00\x03foo" \
@@ -35,7 +35,7 @@ describe NBTFile::Reader do
            "\x00",
            [[:tag_compound, "foo", nil],
             [:tag_int, "bar", 0x01020304],
-            [:tag_end, nil, nil]]
+            [:tag_end, "", nil]]
 
   a_reader "should parse byte fields",
            "\x0a\x00\x03foo" \
@@ -43,7 +43,7 @@ describe NBTFile::Reader do
            "\x00",
            [[:tag_compound, "foo", nil],
             [:tag_byte, "bar", 0x4e],
-            [:tag_end, nil, nil]]
+            [:tag_end, "", nil]]
 
   a_reader "should parse string fields",
            "\x0a\x00\x03foo" \
@@ -51,7 +51,7 @@ describe NBTFile::Reader do
            "\x00",
            [[:tag_compound, "foo", nil],
             [:tag_string, "bar", "hoge"],
-            [:tag_end, nil, nil]]
+            [:tag_end, "", nil]]
 
   a_reader "should parse byte array fields",
            "\x0a\x00\x03foo" \
@@ -59,7 +59,7 @@ describe NBTFile::Reader do
            "\x00",
            [[:tag_compound, "foo", nil],
             [:tag_byte_array, "bar", "\x01\x02\x03\x04\x05"],
-            [:tag_end, nil, nil]]
+            [:tag_end, "", nil]]
 
   a_reader "should parse long fields",
            "\x0a\x00\x03foo" \
@@ -67,7 +67,7 @@ describe NBTFile::Reader do
            "\x00",
            [[:tag_compound, "foo", nil],
             [:tag_long, "bar", 0x0102030405060708],
-            [:tag_end, nil, nil]]
+            [:tag_end, "", nil]]
 end
 
 describe NBTFile::Writer do
