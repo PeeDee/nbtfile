@@ -105,9 +105,9 @@ describe NBTFile::Reader do
            "\x00",
            [[:tag_compound, "foo", nil],
             [:tag_list, "bar", :tag_byte],
-            [:tag_byte, nil, 0x7f],
-            [:tag_byte, nil, 0x3a],
-            [:tag_end, nil, nil],
+            [:tag_byte, 0, 0x7f],
+            [:tag_byte, 1, 0x3a],
+            [:tag_end, 2, nil],
             [:tag_end, "", nil]] 
 
   a_reader "should parse nested lists",
@@ -118,10 +118,10 @@ describe NBTFile::Reader do
            "\x00",
            [[:tag_compound, "foo", nil],
             [:tag_list, "bar", :tag_list],
-            [:tag_list, nil, :tag_byte],
-            [:tag_byte, nil, 0x4a],
-            [:tag_end, nil, nil],
-            [:tag_end, nil, nil],
+            [:tag_list, 0, :tag_byte],
+            [:tag_byte, 0, 0x4a],
+            [:tag_end, 1, nil],
+            [:tag_end, 1, nil],
             [:tag_end, "", nil]]
 end
 

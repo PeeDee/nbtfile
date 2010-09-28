@@ -185,11 +185,12 @@ class ListReaderState
   def initialize(parent, type, length)
     @parent = parent
     @length = length
+    @offset = 0
     @type = type
   end
 
   def read_tag(io)
-    return [@parent, [:tag_end, nil, nil]] unless @length > 0
+    return [@parent, [:tag_end, @length, nil]] unless @offset < @length
 
     next_state = self
 
@@ -218,9 +219,10 @@ class ListReaderState
       next_state = CompoundReaderState.new(self)
       value = nil
     end
-    @length -= 1
+    index = @offset
+    @offset += 1
 
-    [next_state, [@type, nil, value]]
+    [next_state, [@type, index, value]]
   end
 end
 
