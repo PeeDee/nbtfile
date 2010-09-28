@@ -48,8 +48,8 @@ TYPES = [
   :tag_long,
   :tag_float,
   :tag_double,
-  :tag_string,
   :tag_byte_array,
+  :tag_string,
   :tag_list,
   :tag_compound
 ]
@@ -97,6 +97,11 @@ class Reader
     string
   end
 
+  def read_byte_array
+    length = read_int()
+    read_raw(length)
+  end
+
   def each_tag
     while tag = read_tag()
       yield tag
@@ -122,6 +127,8 @@ class Reader
       value = read_byte()
     when :tag_int
       value = read_int()
+    when :tag_byte_array
+      value = read_byte_array()
     else
       value = nil
     end

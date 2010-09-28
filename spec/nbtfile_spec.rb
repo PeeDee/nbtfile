@@ -44,6 +44,14 @@ describe NBTFile::Reader do
            [[:tag_compound, "foo", nil],
             [:tag_byte, "bar", 0x4e],
             [:tag_end, nil, nil]]
+
+  a_reader "should parse byte array fields",
+           "\x0a\x00\x03foo" \
+           "\x07\x00\x03bar\x00\x00\x00\x05\x01\x02\x03\x04\x05" \
+           "\x00",
+           [[:tag_compound, "foo", nil],
+            [:tag_byte_array, "bar", "\x01\x02\x03\x04\x05"],
+            [:tag_end, nil, nil]]
 end
 
 describe NBTFile::Writer do
