@@ -29,6 +29,14 @@ describe NBTFile::Reader do
            [[:tag_compound, "foo", nil],
             [:tag_end, "", nil]]
 
+  a_reader "should parse integers as signed",
+           "\x0a\x00\x03foo" \
+           "\x03\x00\x03bar\xff\xff\xff\xfe" \
+           "\x00",
+           [[:tag_compound, "foo", nil],
+            [:tag_int, "bar", -2],
+            [:tag_end, "", nil]]
+
   a_reader "should parse integer fields",
            "\x0a\x00\x03foo" \
            "\x03\x00\x03bar\x01\x02\x03\x04" \

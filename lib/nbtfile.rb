@@ -66,7 +66,8 @@ module ReadMethods
     value = (0...n_bytes).reduce(0) do |accum, n|
       (accum << 8) | raw_value._nbtfile_getbyte(n)
     end
-    value -= (value & (0x80 << ((n_bytes - 1) << 3)))
+    sign_bit = 1 << ((n_bytes << 3) - 1)
+    value -= ((value & sign_bit) << 1)
     value
   end
 
