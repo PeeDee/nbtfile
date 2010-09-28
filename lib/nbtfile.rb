@@ -21,10 +21,60 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+require 'zlib'
+
 module NBTFile
 
+TYPE_END = 0
+TYPE_BYTE = 1
+TYPE_SHORT = 2
+TYPE_INT = 4
+TYPE_LONG = 8
+TYPE_COMPOUND = 10
+
 class Reader
+  def initialize(io)
+    @gz = Zlib::GzipReader.new(io)
+  end
+
+  def read_short
+    value = @gz.read(2).unpack("n")[0]
+    value -= (value & 0x8000)
+    value
+  end
+
+  def read_int
+    value = @gz.read(4).unpack("N")[0]
+    value -= (value & 0x80000000)
+    value
+  end
+
+  def read_string
+    length = read_short()
+    content = @gz.read(length)
+    # TODO: verify content length
+    content
+  end
+
+  def each_event
+    loop do
+      type = @gz.read(1).unpack("C")[0]
+      name = read_string() if type != TYPE_END
+      case type
+      when TYPE_COMPOUND
+        yield [:start_compound, name]
+      when TYPE_INT
+        value = read_int()
+        yield [:int, name, value]
+      when TYPE_END
+        yield [:end]
+        break
+      end
+    end
+  end
 end
+
+
 
 class Writer
 end
