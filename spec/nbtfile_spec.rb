@@ -5,3 +5,13 @@ describe NBTFile do
   it "exists" do
   end
 end
+
+describe NBTFile::Reader do
+  it "exists" do
+  end
+end
+
+describe NBTFile::Writer do
+  it "exists" do
+  end
+end
