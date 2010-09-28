@@ -154,6 +154,8 @@ class CompoundReaderState
       next_state = @parent
     when :tag_byte
       value = read_byte(io)
+    when :tag_short
+      value = read_short(io)
     when :tag_int
       value = read_int(io)
     when :tag_long

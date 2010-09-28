@@ -37,6 +37,14 @@ describe NBTFile::Reader do
             [:tag_int, "bar", 0x01020304],
             [:tag_end, "", nil]]
 
+  a_reader "should parse short fields",
+           "\x0a\x00\x03foo" \
+           "\x02\x00\x03bar\x4e\x5a" \
+           "\x00",
+           [[:tag_compound, "foo", nil],
+            [:tag_short, "bar", 0x4e5a],
+            [:tag_end, "", nil]]
+
   a_reader "should parse byte fields",
            "\x0a\x00\x03foo" \
            "\x01\x00\x03bar\x4e" \
