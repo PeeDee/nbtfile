@@ -95,9 +95,12 @@ class Reader
   end
 
   def read_tag
-    raw_type = @gz.read(1)
-    return nil unless raw_type
-    type = TYPES[raw_type.unpack("C")[0]]
+    begin
+      type = read_byte()
+    rescue EOFError
+      return nil
+    end
+    type = TYPES[type]
 
     if type != :tag_end
       name = read_string()
