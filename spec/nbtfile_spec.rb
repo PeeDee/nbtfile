@@ -60,6 +60,14 @@ describe NBTFile::Reader do
            [[:tag_compound, "foo", nil],
             [:tag_byte_array, "bar", "\x01\x02\x03\x04\x05"],
             [:tag_end, nil, nil]]
+
+  a_reader "should parse long fields",
+           "\x0a\x00\x03foo" \
+           "\x04\x00\x03bar\x01\x02\x03\x04\x05\x06\x07\x08" \
+           "\x00",
+           [[:tag_compound, "foo", nil],
+            [:tag_long, "bar", 0x0102030405060708],
+            [:tag_end, nil, nil]]
 end
 
 describe NBTFile::Writer do
