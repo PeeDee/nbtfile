@@ -54,9 +54,9 @@ ABNF (see RFC 5234).
 
  long = 8OCTET ; 64-bit signed integer, big-endian
 
- float = 2OCTET ; 32-bit float, big-endian, IEEE 754-2008
+ float = 4OCTET ; 32-bit float, big-endian, IEEE 754-2008
 
- double = 4OCTET ; 64-bit float, big-endian, IEEE 754-2008
+ double = 8OCTET ; 64-bit float, big-endian, IEEE 754-2008
 
  TYPE-END = %x00
  TYPE-BYTE = %x01
