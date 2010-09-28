@@ -37,6 +37,10 @@ class Reader
     @gz = Zlib::GzipReader.new(io)
   end
 
+  def read_byte
+    @gz.read(1).unpack("c")[0]
+  end
+
   def read_short
     value = @gz.read(2).unpack("n")[0]
     value -= (value & 0x8000)
@@ -61,14 +65,17 @@ class Reader
       type = @gz.read(1).unpack("C")[0]
       name = read_string() if type != TYPE_END
       case type
-      when TYPE_COMPOUND
-        yield [:tag_compound, name]
-      when TYPE_INT
-        value = read_int()
-        yield [:tag_int, name, value]
       when TYPE_END
         yield [:tag_end]
         break
+      when TYPE_BYTE
+        value = read_byte()
+        yield [:tag_byte, name, value]
+      when TYPE_INT
+        value = read_int()
+        yield [:tag_int, name, value]
+      when TYPE_COMPOUND
+        yield [:tag_compound, name]
       end
     end
   end

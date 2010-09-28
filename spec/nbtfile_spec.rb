@@ -36,6 +36,14 @@ describe NBTFile::Reader do
            [[:tag_compound, "foo"],
             [:tag_int, "bar", 0x01020304],
             [:tag_end]]
+
+  a_reader "should parse byte fields",
+           "\x0a\x00\x03foo" \
+           "\x01\x00\x03bar\x4e" \
+           "\x00",
+           [[:tag_compound, "foo"],
+            [:tag_byte, "bar", 0x4e],
+            [:tag_end]]
 end
 
 describe NBTFile::Writer do
