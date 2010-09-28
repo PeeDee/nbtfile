@@ -29,6 +29,13 @@ class String
   rescue NameError
     alias_method :_nbtfile_getbyte, :[]
   end
+
+  begin
+    alias_method :_nbtfile_force_encoding, :force_encoding
+  rescue NameError
+    def _nbtfile_force_encoding(encoding)
+    end
+  end
 end
 
 module NBTFile
@@ -85,7 +92,9 @@ class Reader
 
   def read_string
     length = read_short()
-    read_raw(length)
+    string = read_raw(length)
+    string._nbtfile_force_encoding("UTF-8")
+    string
   end
 
   def each_tag
