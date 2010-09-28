@@ -25,12 +25,19 @@ require 'zlib'
 
 module NBTFile
 
-TYPE_END = 0
-TYPE_BYTE = 1
-TYPE_SHORT = 2
-TYPE_INT = 4
-TYPE_LONG = 8
-TYPE_COMPOUND = 10
+TYPES = [
+  :tag_end,
+  :tag_byte,
+  :tag_short,
+  :tag_int,
+  :tag_long,
+  :tag_float,
+  :tag_double,
+  :tag_string,
+  :tag_byte_array,
+  :tag_list,
+  :tag_compound
+]
 
 class Reader
   def initialize(io)
@@ -60,24 +67,33 @@ class Reader
     content
   end
 
-  def each_event
-    loop do
-      type = @gz.read(1).unpack("C")[0]
-      name = read_string() if type != TYPE_END
-      case type
-      when TYPE_END
-        yield [:tag_end]
-        break
-      when TYPE_BYTE
-        value = read_byte()
-        yield [:tag_byte, name, value]
-      when TYPE_INT
-        value = read_int()
-        yield [:tag_int, name, value]
-      when TYPE_COMPOUND
-        yield [:tag_compound, name]
-      end
+  def each_tag
+    while tag = read_tag()
+      yield tag
     end
+  end
+
+  def read_tag
+    raw_type = @gz.read(1)
+    return nil unless raw_type
+    type = TYPES[raw_type.unpack("C")[0]]
+
+    if type != :tag_end
+      name = read_string()
+    else
+      name = nil
+    end
+
+    case type
+    when :tag_byte
+      value = read_byte()
+    when :tag_int
+      value = read_int()
+    else
+      value = nil
+    end
+
+    [type, name, value]
   end
 end
 

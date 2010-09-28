@@ -26,8 +26,7 @@ ABNF (see RFC 5234).
 
  name = string
 
- list = TYPE-END list-length /
-        TYPE-BYTE list-length *byte /
+ list = TYPE-BYTE list-length *byte /
         TYPE-SHORT list-length *short /
         TYPE-INT list-length *int /
         TYPE-LONG list-length *long /
