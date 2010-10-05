@@ -40,7 +40,7 @@ end
 
 module NBTFile
 
-TYPES = [
+TYPES_BY_INDEX = [
   :tag_end,
   :tag_byte,
   :tag_short,
@@ -114,7 +114,7 @@ module ReadMethods
   end
 
   def read_type(io)
-    TYPES[read_byte(io)]
+    TYPES_BY_INDEX[read_byte(io)]
   end
 end
 
@@ -251,7 +251,6 @@ class Reader
     @state, tag = @state.read_tag(@gz)
     tag
   end
-
 end
 
 class Writer
