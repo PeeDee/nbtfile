@@ -3,13 +3,21 @@
 NBTFile is a low-level library for reading and writing
 NBT-format files, as used by the popular game Minecraft.
 
-== Grammar
+== File Format
+
+The official (if somewhat confusing) specification for
+the NBT file format may be found at
+http://www.minecraft.net/docs/NBT.txt
 
 NBT files are gzip-compressed; the structure of the
 uncompressed data can be described by the following
 ABNF (see RFC 5234).
 
  nbt-data = tag-compound
+
+ tag-compound = TYPE-COMPOUND name compound-body
+
+ compound-body = *tag TYPE-END
 
  tag = TYPE-BYTE name byte /
        TYPE-SHORT name short /
@@ -24,8 +32,6 @@ ABNF (see RFC 5234).
 
  name = string
 
- tag-compound = TYPE-COMPOUND name compound-body
-
  list = TYPE-BYTE list-length *byte /
         TYPE-SHORT list-length *short /
         TYPE-INT list-length *int /
@@ -38,8 +44,6 @@ ABNF (see RFC 5234).
         TYPE-COMPOUND list-length *compound-body
 
  list-length = int
-
- compound-body = *tag TYPE-END
 
  ; see RFC 3629 for definition of UTF8-octets
  string = string-length UTF8-octets
