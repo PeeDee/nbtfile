@@ -3,11 +3,48 @@
 NBTFile is a low-level library for reading and writing
 NBT-format files, as used by the popular game Minecraft.
 
-== File Format
+== Official Specification
 
 The official (if somewhat confusing) specification for
 the NBT file format may be found at
 http://www.minecraft.net/docs/NBT.txt
+
+== Data Model
+
+The NBT data model has ten different data types:
+
+ - 8-bit signed integers (Tag_Byte)
+ - 16-bit signed integers (Tag_Short)
+ - 32-bit signed integers (Tag_Int)
+ - 64-bit signed integers (Tag_Long)
+ - 32-bit floating-point numbers (Tag_Float)
+ - 64-bit floating-point numbers (Tag_Double)
+ - UTF-8 strings (Tag_String)
+ - raw byte strings (Tag_Byte_Array)
+ - homogenous lists (Tag_List)
+ - compound structures (Tag_Compound)
+
+Compound structures (Tag_Compound) are unordered
+collections where each item ("tag") has a name associated
+with it.  Compound structures are heterogenous; the
+elements of a compound structure may be any mixture of
+types.
+
+Lists (Tag_List) are ordered collections of unnamed items.
+Lists are homogenous; every element of a particular list
+must have the same type.  Note that all lists have the
+same type (Tag_List) regardless of the type of their
+elements.
+
+Items of an eleventh "type" (Tag_End) serve to terminate
+compound structures and lists (of any type).  The wording
+of the official specification could permit lists of
+Tag_End, but this is not supported in practice.
+
+The top level of an NBT file must be a single-element
+compound structure.
+
+== Syntax
 
 NBT files are gzip-compressed; the structure of the
 uncompressed data can be described by the following
@@ -15,33 +52,33 @@ ABNF (see RFC 5234).
 
  nbt-data = tag-compound
 
- tag-compound = TYPE-COMPOUND name compound-body
+ tag-compound = TAG-COMPOUND name compound-body
 
- compound-body = *tag TYPE-END
+ compound-body = *tag TAG-END
 
- tag = TYPE-BYTE name byte /
-       TYPE-SHORT name short /
-       TYPE-INT name int /
-       TYPE-LONG name long /
-       TYPE-FLOAT name float /
-       TYPE-DOUBLE name double /
-       TYPE-STRING name string /
-       TYPE-BYTE-ARRAY name byte-array /
-       TYPE-LIST name list /
+ tag = TAG-BYTE name byte /
+       TAG-SHORT name short /
+       TAG-INT name int /
+       TAG-LONG name long /
+       TAG-FLOAT name float /
+       TAG-DOUBLE name double /
+       TAG-STRING name string /
+       TAG-BYTE-ARRAY name byte-array /
+       TAG-LIST name list /
        tag-compound
 
  name = string
 
- list = TYPE-BYTE list-length *byte /
-        TYPE-SHORT list-length *short /
-        TYPE-INT list-length *int /
-        TYPE-LONG list-length *long /
-        TYPE-FLOAT list-length *float /
-        TYPE-DOUBLE list-length *double /
-        TYPE-STRING list-length *string /
-        TYPE-BYTE-ARRAY list-length *byte-array /
-        TYPE-LIST list-length *list /
-        TYPE-COMPOUND list-length *compound-body
+ list = TAG-BYTE list-length *byte /
+        TAG-SHORT list-length *short /
+        TAG-INT list-length *int /
+        TAG-LONG list-length *long /
+        TAG-FLOAT list-length *float /
+        TAG-DOUBLE list-length *double /
+        TAG-STRING list-length *string /
+        TAG-BYTE-ARRAY list-length *byte-array /
+        TAG-LIST list-length *list /
+        TAG-COMPOUND list-length *compound-body
 
  list-length = int
 
@@ -62,17 +99,17 @@ ABNF (see RFC 5234).
 
  double = 8OCTET ; 64-bit float, big-endian, IEEE 754-2008
 
- TYPE-END = %x00
- TYPE-BYTE = %x01
- TYPE-SHORT = %x02
- TYPE-INT = %x03
- TYPE-LONG = %x04
- TYPE-FLOAT = %x05
- TYPE-DOUBLE = %x06
- TYPE-BYTE-ARRAY = %x07
- TYPE-STRING = %x08
- TYPE-LIST = %x09
- TYPE-COMPOUND = %x0a
+ TAG-END = %x00
+ TAG-BYTE = %x01
+ TAG-SHORT = %x02
+ TAG-INT = %x03
+ TAG-LONG = %x04
+ TAG-FLOAT = %x05
+ TAG-DOUBLE = %x06
+ TAG-BYTE-ARRAY = %x07
+ TAG-STRING = %x08
+ TAG-LIST = %x09
+ TAG-COMPOUND = %x0a
 
 == Note on Patches/Pull Requests
  
