@@ -124,10 +124,11 @@ end
 
 class TopReaderState
   include ReadMethods
+  include Types
 
   def read_tag(io)
     type = read_type(io)
-    raise RuntimeError, "expected TAG_Compound" unless type == :tag_compound
+    raise RuntimeError, "expected TAG_Compound" unless type == TAG_Compound
     name = read_string(io)
     end_state = EndReaderState.new()
     next_state = CompoundReaderState.new(end_state)
@@ -137,6 +138,7 @@ end
 
 class CompoundReaderState
   include ReadMethods
+  include Types
 
   def initialize(parent)
     @parent = parent
@@ -145,7 +147,7 @@ class CompoundReaderState
   def read_tag(io)
     type = read_type(io)
 
-    if type != :tag_end
+    if type != TAG_End
       name = read_string(io)
     else
       name = ""
@@ -154,30 +156,30 @@ class CompoundReaderState
     next_state = self
 
     case type
-    when :tag_end
+    when TAG_End
       value = nil
       next_state = @parent
-    when :tag_byte
+    when TAG_Byte
       value = read_byte(io)
-    when :tag_short
+    when TAG_Short
       value = read_short(io)
-    when :tag_int
+    when TAG_Int
       value = read_int(io)
-    when :tag_long
+    when TAG_Long
       value = read_long(io)
-    when :tag_string
+    when TAG_String
       value = read_string(io)
-    when :tag_float
+    when TAG_Float
       value = read_float(io)
-    when :tag_double
+    when TAG_Double
       value = read_double(io)
-    when :tag_byte_array
+    when TAG_Byte_Array
       value = read_byte_array(io)
-    when :tag_list
+    when TAG_List
       list_type, list_length = read_list_header(io)
       next_state = ListReaderState.new(self, list_type, list_length)
       value = list_type
-    when :tag_compound
+    when TAG_Compound
       next_state = CompoundReaderState.new(self)
       value = nil
     end
@@ -188,6 +190,7 @@ end
 
 class ListReaderState
   include ReadMethods
+  include Types
 
   def initialize(parent, type, length)
     @parent = parent
@@ -197,32 +200,32 @@ class ListReaderState
   end
 
   def read_tag(io)
-    return [@parent, [:tag_end, @length, nil]] unless @offset < @length
+    return [@parent, [TAG_End, @length, nil]] unless @offset < @length
 
     next_state = self
 
     case @type
-    when :tag_byte
+    when TAG_Byte
       value = read_byte(io)
-    when :tag_short
+    when TAG_Short
       value = read_short(io)
-    when :tag_int
+    when TAG_Int
       value = read_int(io)
-    when :tag_long
+    when TAG_Long
       value = read_long(io)
-    when :tag_float
+    when TAG_Float
       value = read_float(io)
-    when :tag_double
+    when TAG_Double
       value = read_double(io)
-    when :tag_string
+    when TAG_String
       value = read_string(io)
-    when :tag_byte_array
+    when TAG_Byte_Array
       value = read_byte_array(io)
-    when :tag_list
+    when TAG_List
       list_type, list_length = read_list_header(io)
       next_state = ListReaderState.new(self, list_type, list_length)
       value = list_type
-    when :tag_compound
+    when TAG_Compound
       next_state = CompoundReaderState.new(self)
       value = nil
     end
@@ -272,11 +275,11 @@ def self.load(io)
 
   reader.each_tag do |type, name, value|
     case type
-    when :tag_compound
+    when Types::TAG_Compound
       value = {}
-    when :tag_list
+    when Types::TAG_List
       value = []
-    when :tag_end
+    when Types::TAG_End
       stack.pop
       next
     end
@@ -284,7 +287,7 @@ def self.load(io)
     stack.last[name] = value
 
     case type
-    when :tag_compound, :tag_list
+    when Types::TAG_Compound, Types::TAG_List
       stack.push value
     end
   end
