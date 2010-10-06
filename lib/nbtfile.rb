@@ -40,19 +40,18 @@ end
 
 module NBTFile
 
-TYPES_BY_INDEX = [
-  :tag_end,
-  :tag_byte,
-  :tag_short,
-  :tag_int,
-  :tag_long,
-  :tag_float,
-  :tag_double,
-  :tag_byte_array,
-  :tag_string,
-  :tag_list,
-  :tag_compound
-]
+TAGS_BY_INDEX = []
+
+module Types
+  tag_names = %w(End Byte Short Int Long Float Double
+                 Byte_Array String List Compound)
+  tag_names.each do |tag_name|
+    tag_name = "TAG_#{tag_name}"
+    symbol = tag_name.downcase.intern
+    const_set tag_name, symbol
+    TAGS_BY_INDEX << symbol
+  end
+end
 
 module ReadMethods
   def read_raw(io, n_bytes)
@@ -114,7 +113,12 @@ module ReadMethods
   end
 
   def read_type(io)
-    TYPES_BY_INDEX[read_byte(io)]
+    byte = read_byte(io)
+    begin
+      TAGS_BY_INDEX.fetch(byte)
+    rescue IndexError
+      raise RuntimeError, "Unexpected tag #{byte}"
+    end
   end
 end
 

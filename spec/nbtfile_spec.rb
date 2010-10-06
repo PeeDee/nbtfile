@@ -4,6 +4,8 @@ require 'stringio'
 require 'zlib'
 
 describe NBTFile::Reader do
+  Types = NBTFile::Types
+
   def make_zipped_stream(data)
     gz = Zlib::GzipWriter.new(StringIO.new())
     gz << data
@@ -26,80 +28,80 @@ describe NBTFile::Reader do
   a_reader "should parse basic documents",
            "\x0a\x00\x03foo" \
            "\x00",
-           [[:tag_compound, "foo", nil],
-            [:tag_end, "", nil]]
+           [[Types::TAG_Compound, "foo", nil],
+            [Types::TAG_End, "", nil]]
 
   a_reader "should parse integers as signed",
            "\x0a\x00\x03foo" \
            "\x03\x00\x03bar\xff\xff\xff\xfe" \
            "\x00",
-           [[:tag_compound, "foo", nil],
-            [:tag_int, "bar", -2],
-            [:tag_end, "", nil]]
+           [[Types::TAG_Compound, "foo", nil],
+            [Types::TAG_Int, "bar", -2],
+            [Types::TAG_End, "", nil]]
 
   a_reader "should parse integer fields",
            "\x0a\x00\x03foo" \
            "\x03\x00\x03bar\x01\x02\x03\x04" \
            "\x00",
-           [[:tag_compound, "foo", nil],
-            [:tag_int, "bar", 0x01020304],
-            [:tag_end, "", nil]]
+           [[Types::TAG_Compound, "foo", nil],
+            [Types::TAG_Int, "bar", 0x01020304],
+            [Types::TAG_End, "", nil]]
 
   a_reader "should parse short fields",
            "\x0a\x00\x03foo" \
            "\x02\x00\x03bar\x4e\x5a" \
            "\x00",
-           [[:tag_compound, "foo", nil],
-            [:tag_short, "bar", 0x4e5a],
-            [:tag_end, "", nil]]
+           [[Types::TAG_Compound, "foo", nil],
+            [Types::TAG_Short, "bar", 0x4e5a],
+            [Types::TAG_End, "", nil]]
 
   a_reader "should parse byte fields",
            "\x0a\x00\x03foo" \
            "\x01\x00\x03bar\x4e" \
            "\x00",
-           [[:tag_compound, "foo", nil],
-            [:tag_byte, "bar", 0x4e],
-            [:tag_end, "", nil]]
+           [[Types::TAG_Compound, "foo", nil],
+            [Types::TAG_Byte, "bar", 0x4e],
+            [Types::TAG_End, "", nil]]
 
   a_reader "should parse string fields",
            "\x0a\x00\x03foo" \
            "\x08\x00\x03bar\x00\x04hoge" \
            "\x00",
-           [[:tag_compound, "foo", nil],
-            [:tag_string, "bar", "hoge"],
-            [:tag_end, "", nil]]
+           [[Types::TAG_Compound, "foo", nil],
+            [Types::TAG_String, "bar", "hoge"],
+            [Types::TAG_End, "", nil]]
 
   a_reader "should parse byte array fields",
            "\x0a\x00\x03foo" \
            "\x07\x00\x03bar\x00\x00\x00\x05\x01\x02\x03\x04\x05" \
            "\x00",
-           [[:tag_compound, "foo", nil],
-            [:tag_byte_array, "bar", "\x01\x02\x03\x04\x05"],
-            [:tag_end, "", nil]]
+           [[Types::TAG_Compound, "foo", nil],
+            [Types::TAG_Byte_Array, "bar", "\x01\x02\x03\x04\x05"],
+            [Types::TAG_End, "", nil]]
 
   a_reader "should parse long fields",
            "\x0a\x00\x03foo" \
            "\x04\x00\x03bar\x01\x02\x03\x04\x05\x06\x07\x08" \
            "\x00",
-           [[:tag_compound, "foo", nil],
-            [:tag_long, "bar", 0x0102030405060708],
-            [:tag_end, "", nil]]
+           [[Types::TAG_Compound, "foo", nil],
+            [Types::TAG_Long, "bar", 0x0102030405060708],
+            [Types::TAG_End, "", nil]]
 
   a_reader "should parse float fields",
            "\x0a\x00\x03foo" \
            "\x05\x00\x03bar\x3f\xa0\x00\x00" \
            "\x00",
-           [[:tag_compound, "foo", nil],
-            [:tag_float, "bar", "\x3f\xa0\x00\x00".unpack("g").first],
-            [:tag_end, "", nil]]
+           [[Types::TAG_Compound, "foo", nil],
+            [Types::TAG_Float, "bar", "\x3f\xa0\x00\x00".unpack("g").first],
+            [Types::TAG_End, "", nil]]
 
   a_reader "should parse double fields",
            "\x0a\x00\x03foo" \
            "\x06\x00\x03bar\x3f\xf4\x00\x00\x00\x00\x00\x00" \
            "\x00",
-           [[:tag_compound, "foo", nil],
-            [:tag_double, "bar", "\x3f\xf4\x00\x00\x00\x00\x00\x00".unpack("G").first],
-            [:tag_end, "", nil]]
+           [[Types::TAG_Compound, "foo", nil],
+            [Types::TAG_Double, "bar", "\x3f\xf4\x00\x00\x00\x00\x00\x00".unpack("G").first],
+            [Types::TAG_End, "", nil]]
 
   a_reader "should parse nested compound fields",
            "\x0a\x00\x03foo" \
@@ -107,11 +109,11 @@ describe NBTFile::Reader do
            "\x01\x00\x04hoge\x4e" \
            "\x00" \
            "\x00",
-           [[:tag_compound, "foo", nil],
-            [:tag_compound, "bar", nil],
-            [:tag_byte, "hoge", 0x4e],
-            [:tag_end, "", nil],
-            [:tag_end, "", nil]]
+           [[Types::TAG_Compound, "foo", nil],
+            [Types::TAG_Compound, "bar", nil],
+            [Types::TAG_Byte, "hoge", 0x4e],
+            [Types::TAG_End, "", nil],
+            [Types::TAG_End, "", nil]]
 
   a_reader "should parse list of simple type",
            "\x0a\x00\x03foo" \
@@ -119,12 +121,12 @@ describe NBTFile::Reader do
            "\x7f" \
            "\x3a" \
            "\x00",
-           [[:tag_compound, "foo", nil],
-            [:tag_list, "bar", :tag_byte],
-            [:tag_byte, 0, 0x7f],
-            [:tag_byte, 1, 0x3a],
-            [:tag_end, 2, nil],
-            [:tag_end, "", nil]] 
+           [[Types::TAG_Compound, "foo", nil],
+            [Types::TAG_List, "bar", Types::TAG_Byte],
+            [Types::TAG_Byte, 0, 0x7f],
+            [Types::TAG_Byte, 1, 0x3a],
+            [Types::TAG_End, 2, nil],
+            [Types::TAG_End, "", nil]] 
 
   a_reader "should parse nested lists",
            "\x0a\x00\x03foo" \
@@ -132,13 +134,13 @@ describe NBTFile::Reader do
            "\x01\x00\x00\x00\x01" \
            "\x4a" \
            "\x00",
-           [[:tag_compound, "foo", nil],
-            [:tag_list, "bar", :tag_list],
-            [:tag_list, 0, :tag_byte],
-            [:tag_byte, 0, 0x4a],
-            [:tag_end, 1, nil],
-            [:tag_end, 1, nil],
-            [:tag_end, "", nil]]
+           [[Types::TAG_Compound, "foo", nil],
+            [Types::TAG_List, "bar", Types::TAG_List],
+            [Types::TAG_List, 0, Types::TAG_Byte],
+            [Types::TAG_Byte, 0, 0x4a],
+            [Types::TAG_End, 1, nil],
+            [Types::TAG_End, 1, nil],
+            [Types::TAG_End, "", nil]]
 end
 
 describe NBTFile::Writer do
