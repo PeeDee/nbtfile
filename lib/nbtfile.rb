@@ -22,6 +22,7 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 require 'zlib'
+require 'stringio'
 
 class String
   begin
@@ -364,12 +365,66 @@ class CompoundWriterState
       write_float(io, value)
     when TAG_Double
       write_double(io, value)
+    when TAG_List
+      next_state = ListWriterState.new(self, value)
     when TAG_Compound
       next_state = CompoundWriterState.new(self)
     when TAG_End
       next_state = @parent
     else
       raise RuntimeError, "unexpected tag #{type}"
+    end
+
+    next_state
+  end
+end
+
+class ListWriterState
+  include WriteMethods
+  include Types
+
+  def initialize(parent, type)
+    @parent = parent
+    @type = type
+    @count = 0
+    @content = StringIO.new()
+  end
+
+  def emit(io, type, name, value)
+    if type != TAG_End
+      if type != @type
+        raise RuntimeError, "unexpected type #{type}, expected #{@type}"
+      end
+      @count += 1
+    end
+
+    next_state = self
+
+    case type
+    when TAG_Byte
+      write_byte(@content, value)
+    when TAG_Short
+      write_short(@content, value)
+    when TAG_Int
+      write_int(@content, value)
+    when TAG_Long
+      write_long(@content, value)
+    when TAG_Float
+      write_float(@content, value)
+    when TAG_Double
+      write_double(@content, value)
+    when TAG_Byte_Array
+      write_int(@content, value.length)
+      @content.write(value)
+    when TAG_String
+      write_string(@content, value)
+    when TAG_List
+    when TAG_Compound
+    when TAG_End
+      write_type(io, @type)
+      write_int(io, @count)
+      io.write(@content.string)
+      next_state = @parent
     end
 
     next_state
