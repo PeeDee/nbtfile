@@ -87,6 +87,10 @@ ABNF (see RFC 5234).
 
  string-length = short
 
+ byte-array = byte-array-length *byte
+
+ byte-array-length = int
+
  byte = OCTET ; 8-bit signed integer
 
  short = 2OCTET ; 16-bit signed integer, big-endian
