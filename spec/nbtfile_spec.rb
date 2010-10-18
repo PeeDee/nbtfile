@@ -150,3 +150,27 @@ describe NBTFile::Reader do
     actual_tags.should == tags
   end
 end
+
+describe NBTFile::Writer do
+  it_should_behave_like "readers and writers"
+
+  def unzip_string(string)
+    gz = Zlib::GzipReader.new(StringIO.new(string))
+    begin
+      gz.read
+    ensure
+      gz.close
+    end
+  end
+
+  def check_reader_or_writer(output, tags)
+    stream = StringIO.new()
+    writer = NBTFile::Writer.new(stream)
+    for tag in tags
+      writer.emit(*tag)
+    end
+    writer.finish
+    actual_output = unzip_string(stream.string)
+    actual_output.should == output
+  end
+end

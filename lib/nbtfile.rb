@@ -41,19 +41,29 @@ end
 module NBTFile
 
 TAGS_BY_INDEX = []
+TAG_INDICES_BY_TYPE = {}
 
 module Types
   tag_names = %w(End Byte Short Int Long Float Double
                  Byte_Array String List Compound)
-  tag_names.each do |tag_name|
+  tag_names.each_with_index do |tag_name, index|
     tag_name = "TAG_#{tag_name}"
     symbol = tag_name.downcase.intern
     const_set tag_name, symbol
-    TAGS_BY_INDEX << symbol
+    TAGS_BY_INDEX[index] = symbol
+    TAG_INDICES_BY_TYPE[symbol] = index
+  end
+end
+
+module CommonMethods
+  def sign_bit(n_bytes)
+    1 << ((n_bytes << 3) - 1)
   end
 end
 
 module ReadMethods
+  include CommonMethods
+
   def read_raw(io, n_bytes)
     data = io.read(n_bytes)
     raise EOFError unless data and data.length == n_bytes
@@ -65,8 +75,7 @@ module ReadMethods
     value = (0...n_bytes).reduce(0) do |accum, n|
       (accum << 8) | raw_value._nbtfile_getbyte(n)
     end
-    sign_bit = 1 << ((n_bytes << 3) - 1)
-    value -= ((value & sign_bit) << 1)
+    value -= ((value & sign_bit(n_bytes)) << 1)
     value
   end
 
@@ -260,7 +269,133 @@ class Reader
   end
 end
 
+module WriteMethods
+  include CommonMethods
+
+  def write_integer(io, n_bytes, value)
+    value -= ((value & sign_bit(n_bytes)) << 1)
+    bytes = (1..n_bytes).map do |n|
+      byte = (value >> ((n_bytes - n) << 3) & 0xff)
+    end
+    io.write(bytes.pack("C*"))
+  end
+
+  def write_byte(io, value)
+    write_integer(io, 1, value)
+  end
+
+  def write_short(io, value)
+    write_integer(io, 2, value)
+  end
+
+  def write_int(io, value)
+    write_integer(io, 4, value)
+  end
+
+  def write_long(io, value)
+    write_integer(io, 8, value)
+  end
+
+  def write_float(io, value)
+    io.write([value].pack("g"))
+  end
+
+  def write_double(io, value)
+    io.write([value].pack("G"))
+  end
+
+  def write_string(io, value)
+    write_short(io, value.length)
+    io.write(value)
+  end
+
+  def write_type(io, type)
+    write_byte(io, TAG_INDICES_BY_TYPE[type])
+  end
+end
+
+class TopWriterState
+  include WriteMethods
+  include Types
+
+  def emit(io, type, name, value)
+    case type
+    when TAG_Compound
+      write_type(io, type)
+      write_string(io, name)
+      end_state = EndWriterState.new()
+      next_state = CompoundWriterState.new(end_state)
+      next_state
+    end
+  end
+end
+
+class CompoundWriterState
+  include WriteMethods
+  include Types
+
+  def initialize(parent)
+    @parent = parent
+  end
+
+  def emit(io, type, name, value)
+    write_type(io, type)
+    write_string(io, name) unless type == TAG_End
+    next_state = self
+    case type
+    when TAG_Byte
+      write_byte(io, value)
+    when TAG_Short
+      write_short(io, value)
+    when TAG_Int
+      write_int(io, value)
+    when TAG_Long
+      write_long(io, value)
+    when TAG_Float
+      write_float(io, value)
+    when TAG_Double
+      write_double(io, value)
+    when TAG_Byte_Array
+      write_int(io, value.length)
+      io.write(value)
+    when TAG_String
+      write_string(io, value)
+    when TAG_Float
+      write_float(io, value)
+    when TAG_Double
+      write_double(io, value)
+    when TAG_Compound
+      next_state = CompoundWriterState.new(self)
+    when TAG_End
+      next_state = @parent
+    else
+      raise RuntimeError, "unexpected tag #{type}"
+    end
+
+    next_state
+  end
+end
+
+class EndWriterState
+  def emit(io, type, name, value)
+  end
+end
+
 class Writer
+  include WriteMethods
+
+  def initialize(stream)
+    @gz = Zlib::GzipWriter.new(stream)
+    @state = TopWriterState.new()
+  end
+
+  def emit(tag, name, value)
+    @state = @state.emit(@gz, tag, name, value)
+  end
+
+  def finish
+    @gz.close
+  end
 end
 
 def self.load(io)
