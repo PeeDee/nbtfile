@@ -166,10 +166,13 @@ describe NBTFile::Writer do
   def check_reader_or_writer(output, tags)
     stream = StringIO.new()
     writer = NBTFile::Writer.new(stream)
-    for tag in tags
-      writer.emit(*tag)
+    begin
+      for tag in tags
+        writer.emit(*tag)
+      end
+    ensure
+      writer.finish
     end
-    writer.finish
     actual_output = unzip_string(stream.string)
     actual_output.should == output
   end
