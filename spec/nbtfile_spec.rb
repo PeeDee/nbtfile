@@ -131,14 +131,9 @@ shared_examples_for "readers and writers" do
 end
 
 describe NBTFile::Reader do
-  it_should_behave_like "readers and writers"
+  include ZlibHelpers
 
-  def make_zipped_stream(data)
-    gz = Zlib::GzipWriter.new(StringIO.new())
-    gz << data
-    string = gz.close.string
-    StringIO.new(string, "rb")
-  end
+  it_should_behave_like "readers and writers"
 
   def check_reader_or_writer(input, tags)
     io = make_zipped_stream(input)
@@ -152,6 +147,7 @@ describe NBTFile::Reader do
 end
 
 describe NBTFile::Writer do
+  include ZlibHelpers
   it_should_behave_like "readers and writers"
 
   def unzip_string(string)
@@ -168,7 +164,7 @@ describe NBTFile::Writer do
     writer = NBTFile::Writer.new(stream)
     begin
       for tag in tags
-        writer.emit(*tag)
+        writer.emit_tag(*tag)
       end
     ensure
       writer.finish

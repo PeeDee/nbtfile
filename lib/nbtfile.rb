@@ -319,7 +319,7 @@ class TopWriterState
   include WriteMethods
   include Types
 
-  def emit(io, type, name, value)
+  def emit_tag(io, type, name, value)
     case type
     when TAG_Compound
       write_type(io, type)
@@ -339,7 +339,7 @@ class CompoundWriterState
     @parent = parent
   end
 
-  def emit(io, type, name, value)
+  def emit_tag(io, type, name, value)
     write_type(io, type)
     write_string(io, name) unless type == TAG_End
     next_state = self
@@ -390,7 +390,7 @@ class ListWriterState
     @content = StringIO.new()
   end
 
-  def emit(io, type, name, value)
+  def emit_tag(io, type, name, value)
     if type != TAG_End
       if type != @type
         raise RuntimeError, "unexpected type #{type}, expected #{@type}"
@@ -432,7 +432,7 @@ class ListWriterState
 end
 
 class EndWriterState
-  def emit(io, type, name, value)
+  def emit_tag(io, type, name, value)
   end
 end
 
@@ -444,8 +444,8 @@ class Writer
     @state = TopWriterState.new()
   end
 
-  def emit(tag, name, value)
-    @state = @state.emit(@gz, tag, name, value)
+  def emit_tag(tag, name, value)
+    @state = @state.emit_tag(@gz, tag, name, value)
   end
 
   def finish
