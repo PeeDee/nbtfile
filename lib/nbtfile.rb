@@ -132,12 +132,12 @@ module ReadMethods
     end
   end
 
-  def read_value(io, type, name, state, parent)
+  def read_value(io, type, name, state, cont)
     next_state = state
 
     case type
     when TAG_End
-      next_state = parent
+      next_state = cont
       value = nil
     when TAG_Byte
       value = read_byte(io)
@@ -185,8 +185,8 @@ class CompoundReaderState
   include ReadMethods
   include Types
 
-  def initialize(parent)
-    @parent = parent
+  def initialize(cont)
+    @cont = cont
   end
 
   def read_tag(io)
@@ -198,7 +198,7 @@ class CompoundReaderState
       name = ""
     end
 
-    read_value(io, type, name, self, @parent)
+    read_value(io, type, name, self, @cont)
   end
 end
 
@@ -206,8 +206,8 @@ class ListReaderState
   include ReadMethods
   include Types
 
-  def initialize(parent, type, length)
-    @parent = parent
+  def initialize(cont, type, length)
+    @cont = cont
     @length = length
     @offset = 0
     @type = type
@@ -223,7 +223,7 @@ class ListReaderState
     index = @offset
     @offset += 1
 
-    read_value(io, type, index, self, @parent)
+    read_value(io, type, index, self, @cont)
   end
 end
 
@@ -306,7 +306,7 @@ module WriteMethods
     write_int(io, count)
   end
 
-  def write_value(io, type, value, capturing, state, parent)
+  def write_value(io, type, value, capturing, state, cont)
     next_state = self
 
     case type
@@ -335,7 +335,7 @@ module WriteMethods
     when TAG_Compound
       next_state = CompoundWriterState.new(state, capturing)
     when TAG_End
-      next_state = parent
+      next_state = cont
     else
       raise RuntimeError, "unexpected tag #{type}"
     end
@@ -364,8 +364,8 @@ class CompoundWriterState
   include WriteMethods
   include Types
 
-  def initialize(parent, capturing)
-    @parent = parent
+  def initialize(cont, capturing)
+    @cont = cont
     @capturing = capturing
   end
 
@@ -375,7 +375,7 @@ class CompoundWriterState
     write_type(out, type)
     write_string(out, name) unless type == TAG_End
 
-    write_value(out, type, value, @capturing, self, @parent)
+    write_value(out, type, value, @capturing, self, @cont)
   end
 end
 
@@ -383,11 +383,11 @@ class ListWriterState
   include WriteMethods
   include Types
 
-  def initialize(parent, type, capturing)
-    @parent = parent
+  def initialize(cont, type, capturing)
+    @cont = cont
     @type = type
     @count = 0
-    @content = StringIO.new()
+    @value = StringIO.new()
     @capturing = capturing
   end
 
@@ -395,14 +395,14 @@ class ListWriterState
     if type == TAG_End
       out = @capturing || io
       write_list_header(out, @type, @count)
-      out.write(@content.string)
+      out.write(@value.string)
     elsif type != @type
       raise RuntimeError, "unexpected type #{type}, expected #{@type}"
     end
 
     @count += 1
 
-    write_value(@content, type, value, @content, self, @parent)
+    write_value(@value, type, value, @value, self, @cont)
   end
 end
 
