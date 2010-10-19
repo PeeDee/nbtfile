@@ -255,7 +255,7 @@ module WriteMethods
   include Types
   include CommonMethods
 
-  def write_integer(io, n_bytes, value)
+  def emit_integer(io, n_bytes, value)
     value -= ((value & sign_bit(n_bytes)) << 1)
     bytes = (1..n_bytes).map do |n|
       byte = (value >> ((n_bytes - n) << 3) & 0xff)
@@ -263,73 +263,73 @@ module WriteMethods
     io.write(bytes.pack("C*"))
   end
 
-  def write_byte(io, value)
-    write_integer(io, 1, value)
+  def emit_byte(io, value)
+    emit_integer(io, 1, value)
   end
 
-  def write_short(io, value)
-    write_integer(io, 2, value)
+  def emit_short(io, value)
+    emit_integer(io, 2, value)
   end
 
-  def write_int(io, value)
-    write_integer(io, 4, value)
+  def emit_int(io, value)
+    emit_integer(io, 4, value)
   end
 
-  def write_long(io, value)
-    write_integer(io, 8, value)
+  def emit_long(io, value)
+    emit_integer(io, 8, value)
   end
 
-  def write_float(io, value)
+  def emit_float(io, value)
     io.write([value].pack("g"))
   end
 
-  def write_double(io, value)
+  def emit_double(io, value)
     io.write([value].pack("G"))
   end
 
-  def write_byte_array(io, value)
-    write_int(io, value.length)
+  def emit_byte_array(io, value)
+    emit_int(io, value.length)
     io.write(value)
   end
 
-  def write_string(io, value)
-    write_short(io, value.length)
+  def emit_string(io, value)
+    emit_short(io, value.length)
     io.write(value)
   end
 
-  def write_type(io, type)
-    write_byte(io, TAG_INDICES_BY_TYPE[type])
+  def emit_type(io, type)
+    emit_byte(io, TAG_INDICES_BY_TYPE[type])
   end
 
-  def write_list_header(io, type, count)
-    write_type(io, type)
-    write_int(io, count)
+  def emit_list_header(io, type, count)
+    emit_type(io, type)
+    emit_int(io, count)
   end
 
-  def write_value(io, type, value, capturing, state, cont)
+  def emit_value(io, type, value, capturing, state, cont)
     next_state = self
 
     case type
     when TAG_Byte
-      write_byte(io, value)
+      emit_byte(io, value)
     when TAG_Short
-      write_short(io, value)
+      emit_short(io, value)
     when TAG_Int
-      write_int(io, value)
+      emit_int(io, value)
     when TAG_Long
-      write_long(io, value)
+      emit_long(io, value)
     when TAG_Float
-      write_float(io, value)
+      emit_float(io, value)
     when TAG_Double
-      write_double(io, value)
+      emit_double(io, value)
     when TAG_Byte_Array
-      write_byte_array(io, value)
+      emit_byte_array(io, value)
     when TAG_String
-      write_string(io, value)
+      emit_string(io, value)
     when TAG_Float
-      write_float(io, value)
+      emit_float(io, value)
     when TAG_Double
-      write_double(io, value)
+      emit_double(io, value)
     when TAG_List
       next_state = ListWriterState.new(state, value, capturing)
     when TAG_Compound
@@ -351,8 +351,8 @@ class TopWriterState
   def emit_tag(io, type, name, value)
     case type
     when TAG_Compound
-      write_type(io, type)
-      write_string(io, name)
+      emit_type(io, type)
+      emit_string(io, name)
       end_state = EndWriterState.new()
       next_state = CompoundWriterState.new(end_state, nil)
       next_state
@@ -372,10 +372,10 @@ class CompoundWriterState
   def emit_tag(io, type, name, value)
     out = @capturing || io
 
-    write_type(out, type)
-    write_string(out, name) unless type == TAG_End
+    emit_type(out, type)
+    emit_string(out, name) unless type == TAG_End
 
-    write_value(out, type, value, @capturing, self, @cont)
+    emit_value(out, type, value, @capturing, self, @cont)
   end
 end
 
@@ -394,7 +394,7 @@ class ListWriterState
   def emit_tag(io, type, name, value)
     if type == TAG_End
       out = @capturing || io
-      write_list_header(out, @type, @count)
+      emit_list_header(out, @type, @count)
       out.write(@value.string)
     elsif type != @type
       raise RuntimeError, "unexpected type #{type}, expected #{@type}"
@@ -402,7 +402,7 @@ class ListWriterState
 
     @count += 1
 
-    write_value(@value, type, value, @value, self, @cont)
+    emit_value(@value, type, value, @value, self, @cont)
   end
 end
 
