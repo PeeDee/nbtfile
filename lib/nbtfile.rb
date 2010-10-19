@@ -286,6 +286,11 @@ module WriteMethods
     io.write([value].pack("G"))
   end
 
+  def write_byte_array(io, value)
+    write_int(io, value.length)
+    io.write(value)
+  end
+
   def write_string(io, value)
     write_short(io, value.length)
     io.write(value)
@@ -293,6 +298,11 @@ module WriteMethods
 
   def write_type(io, type)
     write_byte(io, TAG_INDICES_BY_TYPE[type])
+  end
+
+  def write_list_header(io, type, count)
+    write_type(io, type)
+    write_int(io, count)
   end
 end
 
@@ -306,7 +316,7 @@ class TopWriterState
       write_type(io, type)
       write_string(io, name)
       end_state = EndWriterState.new()
-      next_state = CompoundWriterState.new(end_state)
+      next_state = CompoundWriterState.new(end_state, nil)
       next_state
     end
   end
@@ -316,40 +326,43 @@ class CompoundWriterState
   include WriteMethods
   include Types
 
-  def initialize(parent)
+  def initialize(parent, capturing)
     @parent = parent
+    @capturing = capturing
   end
 
   def emit_tag(io, type, name, value)
-    write_type(io, type)
-    write_string(io, name) unless type == TAG_End
+    out = @capturing || io
+
+    write_type(out, type)
+    write_string(out, name) unless type == TAG_End
+
     next_state = self
     case type
     when TAG_Byte
-      write_byte(io, value)
+      write_byte(out, value)
     when TAG_Short
-      write_short(io, value)
+      write_short(out, value)
     when TAG_Int
-      write_int(io, value)
+      write_int(out, value)
     when TAG_Long
-      write_long(io, value)
+      write_long(out, value)
     when TAG_Float
-      write_float(io, value)
+      write_float(out, value)
     when TAG_Double
-      write_double(io, value)
+      write_double(out, value)
     when TAG_Byte_Array
-      write_int(io, value.length)
-      io.write(value)
+      write_byte_array(out, value)
     when TAG_String
-      write_string(io, value)
+      write_string(out, value)
     when TAG_Float
-      write_float(io, value)
+      write_float(out, value)
     when TAG_Double
-      write_double(io, value)
+      write_double(out, value)
     when TAG_List
-      next_state = ListWriterState.new(self, value)
+      next_state = ListWriterState.new(self, value, @capturing)
     when TAG_Compound
-      next_state = CompoundWriterState.new(self)
+      next_state = CompoundWriterState.new(self, @capturing)
     when TAG_End
       next_state = @parent
     else
@@ -364,11 +377,12 @@ class ListWriterState
   include WriteMethods
   include Types
 
-  def initialize(parent, type)
+  def initialize(parent, type, capturing)
     @parent = parent
     @type = type
     @count = 0
     @content = StringIO.new()
+    @capturing = capturing
   end
 
   def emit_tag(io, type, name, value)
@@ -395,32 +409,21 @@ class ListWriterState
     when TAG_Double
       write_double(@content, value)
     when TAG_Byte_Array
-      write_int(@content, value.length)
-      @content.write(value)
+      write_byte_array(@content, value)
     when TAG_String
       write_string(@content, value)
     when TAG_List
-      next_state = NestedListWriterState.new(self, value, @content)
+      next_state = ListWriterState.new(self, value, @content)
     when TAG_Compound
+      next_state = CompoundWriterState.new(self, @content)
     when TAG_End
-      write_type(io, @type)
-      write_int(io, @count)
-      io.write(@content.string)
+      out = @capturing || io
+      write_list_header(out, @type, @count)
+      out.write(@content.string)
       next_state = @parent
     end
 
     next_state
-  end
-end
-
-class NestedListWriterState < ListWriterState
-  def initialize(parent, type, content)
-    super(parent, type)
-    @parent_content = content
-  end
-
-  def emit_tag(io, type, name, value)
-    super(@parent_content, type, name, value)
   end
 end
 
