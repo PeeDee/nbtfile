@@ -439,6 +439,15 @@ class Writer
     @state = @state.emit_tag(@gz, tag, name, value)
   end
 
+  def emit_compound(name=nil)
+    emit_tag(TAG_Compound, name, nil)
+    begin
+      yield
+    ensure
+      emit_tag(TAG_End, nil, nil)
+    end
+  end
+
   def emit_list(type, name=nil)
     emit_tag(TAG_List, name, type)
     begin

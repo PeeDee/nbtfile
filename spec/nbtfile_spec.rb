@@ -185,7 +185,7 @@ describe NBTFile::Writer do
     actual_output.should == output
   end
 
-  it "should support shorthand for emitting list" do
+  it "should support shorthand for emitting lists" do
     output = StringIO.new()
     writer = NBTFile::Writer.new(output)
     begin
@@ -203,6 +203,28 @@ describe NBTFile::Writer do
     actual_output.should == "\x0a\x00\x04test" \
                             "\x09\x00\x03foo\x01\x00\x00\x00\x02" \
                             "\x0c\x2b" \
+                            "\x00"
+  end
+
+  it "should support shorthand for emitting compound structures" do
+    output = StringIO.new()
+    writer = NBTFile::Writer.new(output)
+    begin
+      writer.emit_tag(Types::TAG_Compound, "test", nil)
+      writer.emit_compound("xyz") do
+        writer.emit_tag(Types::TAG_Byte, "foo", 0x08)
+        writer.emit_tag(Types::TAG_Byte, "bar", 0x02)
+      end
+      writer.emit_tag(Types::TAG_End, nil, nil)
+    ensure
+      writer.finish
+    end
+    actual_output = unzip_string(output.string)
+    actual_output.should == "\x0a\x00\x04test" \
+                            "\x0a\x00\x03xyz" \
+                            "\x01\x00\x03foo\x08" \
+                            "\x01\x00\x03bar\x02" \
+                            "\x00" \
                             "\x00"
   end
 end
