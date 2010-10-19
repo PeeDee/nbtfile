@@ -1,4 +1,5 @@
 require File.expand_path(File.dirname(__FILE__) + '/spec_helper')
+require 'enumerator'
 require 'nbtfile'
 require 'stringio'
 require 'zlib'
@@ -182,5 +183,26 @@ describe NBTFile::Writer do
     end
     actual_output = unzip_string(stream.string)
     actual_output.should == output
+  end
+
+  it "should support shorthand for emitting list" do
+    output = StringIO.new()
+    writer = NBTFile::Writer.new(output)
+    begin
+      writer.emit_tag(Types::TAG_Compound, "test", nil)
+      writer.emit_list(Types::TAG_Byte, "foo") do
+        writer.emit_item(12)
+        writer.emit_item(43)
+      end
+      writer.emit_tag(Types::TAG_End, nil, nil)
+    ensure
+      writer.finish
+    end
+
+    actual_output = unzip_string(output.string)
+    actual_output.should == "\x0a\x00\x04test" \
+                            "\x09\x00\x03foo\x01\x00\x00\x00\x02" \
+                            "\x0c\x2b" \
+                            "\x00"
   end
 end

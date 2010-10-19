@@ -377,6 +377,10 @@ class CompoundWriterState
 
     emit_value(out, type, value, @capturing, self, @cont)
   end
+
+  def emit_item(io, value)
+    raise RuntimeError, "not in a list"
+  end
 end
 
 class ListWriterState
@@ -400,8 +404,15 @@ class ListWriterState
       raise RuntimeError, "unexpected type #{type}, expected #{@type}"
     end
 
-    @count += 1
+    _emit_item(io, type, value)
+  end
 
+  def emit_item(io, value)
+    _emit_item(io, @type, value)
+  end
+
+  def _emit_item(io, type, value)
+    @count += 1
     emit_value(@value, type, value, @value, self, @cont)
   end
 end
@@ -409,6 +420,10 @@ end
 class EndWriterState
   def emit_tag(io, type, name, value)
     raise RuntimeError, "unexpected type #{type} after end"
+  end
+
+  def emit_item(io, value)
+    raise RuntimeError, "not in a list"
   end
 end
 
@@ -422,6 +437,19 @@ class Writer
 
   def emit_tag(tag, name, value)
     @state = @state.emit_tag(@gz, tag, name, value)
+  end
+
+  def emit_list(type, name=nil)
+    emit_tag(TAG_List, name, type)
+    begin
+      yield
+    ensure
+      emit_tag(TAG_End, nil, nil)
+    end
+  end
+
+  def emit_item(value)
+    @state = @state.emit_item(@gz, value)
   end
 
   def finish
