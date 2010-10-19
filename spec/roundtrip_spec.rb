@@ -7,7 +7,7 @@ require 'zlib'
 describe NBTFile do
   include ZlibHelpers
 
-  sample_pattern = File.join(File.dirname(__FILE__), 'samples', '*.nbt')
+  sample_pattern = File.join(File.dirname(__FILE__), '..', 'samples', '*.nbt')
 
   for file in Dir.glob(sample_pattern)
     it "should roundtrip #{File.basename(file)}" do
