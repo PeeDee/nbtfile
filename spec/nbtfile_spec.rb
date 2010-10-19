@@ -102,18 +102,29 @@ shared_examples_for "readers and writers" do
                       [Types::TAG_End, "", nil],
                       [Types::TAG_End, "", nil]]
 
-  a_reader_or_writer "should handle lists of simple types",
-                     "\x0a\x00\x03foo" \
-                     "\x09\x00\x03bar\x01\x00\x00\x00\x02" \
-                     "\x7f" \
-                     "\x3a" \
-                     "\x00",
-                     [[Types::TAG_Compound, "foo", nil],
-                      [Types::TAG_List, "bar", Types::TAG_Byte],
-                      [Types::TAG_Byte, 0, 0x7f],
-                      [Types::TAG_Byte, 1, 0x3a],
-                      [Types::TAG_End, 2, nil],
+  simple_list_types = [
+    ["bytes", Types::TAG_Byte, 0x01, lambda { |ns| ns.pack("C*") }],
+    ["shorts", Types::TAG_Short, 0x02, lambda { |ns| ns.pack("n*") }],
+    ["ints", Types::TAG_Int, 0x03, lambda { |ns| ns.pack("N*") }],
+    ["longs", Types::TAG_Long, 0x04, lambda { |ns| ns.map { |n| [n].pack("x4N") }.join("") }],
+    ["floats", Types::TAG_Float, 0x05, lambda { |ns| ns.pack("g*") }],
+    ["doubles", Types::TAG_Double, 0x06, lambda { |ns| ns.pack("G*") }]
+  ]
+
+  for label, type, tag, pack in simple_list_types
+    values = [9, 5]
+    a_reader_or_writer "should handle lists of #{label}",
+                       "\x0a\x00\x03foo" \
+                       "\x09\x00\x03bar#{[tag].pack("C")}\x00\x00\x00\x02" \
+                       "#{pack.call(values)}" \
+                       "\x00",
+                       [[Types::TAG_Compound, "foo", nil],
+                        [Types::TAG_List, "bar", type],
+                        [type, 0, values[0]],
+                        [type, 1, values[1]],
+                        [Types::TAG_End, 2, nil],
                       [Types::TAG_End, "", nil]] 
+  end
 
   a_reader_or_writer "should handle nested lists",
                      "\x0a\x00\x03foo" \
