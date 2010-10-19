@@ -419,6 +419,7 @@ class ListWriterState
     when TAG_String
       write_string(@content, value)
     when TAG_List
+      next_state = NestedListWriterState.new(self, value, @content)
     when TAG_Compound
     when TAG_End
       write_type(io, @type)
@@ -428,6 +429,17 @@ class ListWriterState
     end
 
     next_state
+  end
+end
+
+class NestedListWriterState < ListWriterState
+  def initialize(parent, type, content)
+    super(parent, type)
+    @parent_content = content
+  end
+
+  def emit_tag(io, type, name, value)
+    super(@parent_content, type, name, value)
   end
 end
 
