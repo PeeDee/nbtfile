@@ -63,6 +63,7 @@ module CommonMethods
 end
 
 module ReadMethods
+  include Types
   include CommonMethods
 
   def read_raw(io, n_bytes)
@@ -130,6 +131,42 @@ module ReadMethods
       raise RuntimeError, "Unexpected tag #{byte}"
     end
   end
+
+  def read_value(io, type, name, state, parent)
+    next_state = state
+
+    case type
+    when TAG_End
+      next_state = parent
+      value = nil
+    when TAG_Byte
+      value = read_byte(io)
+    when TAG_Short
+      value = read_short(io)
+    when TAG_Int
+      value = read_int(io)
+    when TAG_Long
+      value = read_long(io)
+    when TAG_Float
+      value = read_float(io)
+    when TAG_Double
+      value = read_double(io)
+    when TAG_Byte_Array
+      value = read_byte_array(io)
+    when TAG_String
+      value = read_string(io)
+    when TAG_List
+      list_type, list_length = read_list_header(io)
+      next_state = ListReaderState.new(state, list_type, list_length)
+      value = list_type
+    when TAG_Compound
+      next_state = CompoundReaderState.new(state)
+    else
+      value = nil
+    end
+
+    [next_state, [type, name, value]]
+  end
 end
 
 class TopReaderState
@@ -163,38 +200,7 @@ class CompoundReaderState
       name = ""
     end
 
-    next_state = self
-
-    case type
-    when TAG_End
-      value = nil
-      next_state = @parent
-    when TAG_Byte
-      value = read_byte(io)
-    when TAG_Short
-      value = read_short(io)
-    when TAG_Int
-      value = read_int(io)
-    when TAG_Long
-      value = read_long(io)
-    when TAG_String
-      value = read_string(io)
-    when TAG_Float
-      value = read_float(io)
-    when TAG_Double
-      value = read_double(io)
-    when TAG_Byte_Array
-      value = read_byte_array(io)
-    when TAG_List
-      list_type, list_length = read_list_header(io)
-      next_state = ListReaderState.new(self, list_type, list_length)
-      value = list_type
-    when TAG_Compound
-      next_state = CompoundReaderState.new(self)
-      value = nil
-    end
-
-    [next_state, [type, name, value]]
+    read_value(io, type, name, self, @parent)
   end
 end
 
@@ -210,39 +216,16 @@ class ListReaderState
   end
 
   def read_tag(io)
-    return [@parent, [TAG_End, @length, nil]] unless @offset < @length
-
-    next_state = self
-
-    case @type
-    when TAG_Byte
-      value = read_byte(io)
-    when TAG_Short
-      value = read_short(io)
-    when TAG_Int
-      value = read_int(io)
-    when TAG_Long
-      value = read_long(io)
-    when TAG_Float
-      value = read_float(io)
-    when TAG_Double
-      value = read_double(io)
-    when TAG_String
-      value = read_string(io)
-    when TAG_Byte_Array
-      value = read_byte_array(io)
-    when TAG_List
-      list_type, list_length = read_list_header(io)
-      next_state = ListReaderState.new(self, list_type, list_length)
-      value = list_type
-    when TAG_Compound
-      next_state = CompoundReaderState.new(self)
-      value = nil
+    if @offset < @length
+      type = @type
+    else
+      type = TAG_End
     end
+
     index = @offset
     @offset += 1
 
-    [next_state, [@type, index, value]]
+    read_value(io, type, index, self, @parent)
   end
 end
 
