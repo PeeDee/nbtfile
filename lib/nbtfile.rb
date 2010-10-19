@@ -307,7 +307,7 @@ module WriteMethods
   end
 
   def emit_value(io, type, value, capturing, state, cont)
-    next_state = self
+    next_state = state
 
     case type
     when TAG_Byte
