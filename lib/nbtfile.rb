@@ -161,8 +161,6 @@ module ReadMethods
       value = list_type
     when TAG_Compound
       next_state = CompoundReaderState.new(state)
-    else
-      value = nil
     end
 
     [next_state, [type, name, value]]
