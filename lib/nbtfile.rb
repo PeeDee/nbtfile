@@ -252,6 +252,7 @@ class Reader
 end
 
 module WriteMethods
+  include Types
   include CommonMethods
 
   def write_integer(io, n_bytes, value)
@@ -304,6 +305,43 @@ module WriteMethods
     write_type(io, type)
     write_int(io, count)
   end
+
+  def write_value(io, type, value, capturing, state, parent)
+    next_state = self
+
+    case type
+    when TAG_Byte
+      write_byte(io, value)
+    when TAG_Short
+      write_short(io, value)
+    when TAG_Int
+      write_int(io, value)
+    when TAG_Long
+      write_long(io, value)
+    when TAG_Float
+      write_float(io, value)
+    when TAG_Double
+      write_double(io, value)
+    when TAG_Byte_Array
+      write_byte_array(io, value)
+    when TAG_String
+      write_string(io, value)
+    when TAG_Float
+      write_float(io, value)
+    when TAG_Double
+      write_double(io, value)
+    when TAG_List
+      next_state = ListWriterState.new(state, value, capturing)
+    when TAG_Compound
+      next_state = CompoundWriterState.new(state, capturing)
+    when TAG_End
+      next_state = parent
+    else
+      raise RuntimeError, "unexpected tag #{type}"
+    end
+
+    next_state
+  end
 end
 
 class TopWriterState
@@ -337,39 +375,7 @@ class CompoundWriterState
     write_type(out, type)
     write_string(out, name) unless type == TAG_End
 
-    next_state = self
-    case type
-    when TAG_Byte
-      write_byte(out, value)
-    when TAG_Short
-      write_short(out, value)
-    when TAG_Int
-      write_int(out, value)
-    when TAG_Long
-      write_long(out, value)
-    when TAG_Float
-      write_float(out, value)
-    when TAG_Double
-      write_double(out, value)
-    when TAG_Byte_Array
-      write_byte_array(out, value)
-    when TAG_String
-      write_string(out, value)
-    when TAG_Float
-      write_float(out, value)
-    when TAG_Double
-      write_double(out, value)
-    when TAG_List
-      next_state = ListWriterState.new(self, value, @capturing)
-    when TAG_Compound
-      next_state = CompoundWriterState.new(self, @capturing)
-    when TAG_End
-      next_state = @parent
-    else
-      raise RuntimeError, "unexpected tag #{type}"
-    end
-
-    next_state
+    write_value(out, type, value, @capturing, self, @parent)
   end
 end
 
@@ -386,49 +392,23 @@ class ListWriterState
   end
 
   def emit_tag(io, type, name, value)
-    if type != TAG_End
-      if type != @type
-        raise RuntimeError, "unexpected type #{type}, expected #{@type}"
-      end
-      @count += 1
-    end
-
-    next_state = self
-
-    case type
-    when TAG_Byte
-      write_byte(@content, value)
-    when TAG_Short
-      write_short(@content, value)
-    when TAG_Int
-      write_int(@content, value)
-    when TAG_Long
-      write_long(@content, value)
-    when TAG_Float
-      write_float(@content, value)
-    when TAG_Double
-      write_double(@content, value)
-    when TAG_Byte_Array
-      write_byte_array(@content, value)
-    when TAG_String
-      write_string(@content, value)
-    when TAG_List
-      next_state = ListWriterState.new(self, value, @content)
-    when TAG_Compound
-      next_state = CompoundWriterState.new(self, @content)
-    when TAG_End
+    if type == TAG_End
       out = @capturing || io
       write_list_header(out, @type, @count)
       out.write(@content.string)
-      next_state = @parent
+    elsif type != @type
+      raise RuntimeError, "unexpected type #{type}, expected #{@type}"
     end
 
-    next_state
+    @count += 1
+
+    write_value(@content, type, value, @content, self, @parent)
   end
 end
 
 class EndWriterState
   def emit_tag(io, type, name, value)
+    raise RuntimeError, "unexpected type #{type} after end"
   end
 end
 
