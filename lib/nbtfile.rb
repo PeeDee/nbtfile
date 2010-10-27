@@ -447,7 +447,7 @@ class Writer
     @state = @state.emit_token(@gz, token)
   end
 
-  def emit_compound(name=nil)
+  def emit_compound(name)
     emit_token(TAG_Compound[name, nil])
     begin
       yield
@@ -456,7 +456,7 @@ class Writer
     end
   end
 
-  def emit_list(type, name=nil)
+  def emit_list(name, type)
     emit_token(TAG_List[name, type])
     begin
       yield

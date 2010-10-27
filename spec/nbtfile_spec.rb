@@ -239,7 +239,7 @@ describe NBTFile::Writer do
     writer = NBTFile::Writer.new(output)
     begin
       writer.emit_token(Tokens::TAG_Compound["test", nil])
-      writer.emit_list(Tokens::TAG_Byte, "foo") do
+      writer.emit_list("foo", Tokens::TAG_Byte) do
         writer.emit_item(12)
         writer.emit_item(43)
       end
