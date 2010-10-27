@@ -511,7 +511,7 @@ def self.load(io)
     end
   end
 
-  root
+  root.first
 end
 
 end

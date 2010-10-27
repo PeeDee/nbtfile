@@ -173,12 +173,12 @@ describe "NBTFile::load" do
     end
   end
 
-  nbtfile_load "should generate a top-level hash",
+  nbtfile_load "should generate a top-level pair",
                [Tokens::TAG_Compound["foo", nil],
                 Tokens::TAG_Byte["a", 19],
                 Tokens::TAG_Byte["b", 23],
                 Tokens::TAG_End[nil, nil]],
-               {"foo" => {"a" => 19, "b" => 23}}
+               ["foo", {"a" => 19, "b" => 23}]
 
   nbtfile_load "should map compound structures to hashes",
                [Tokens::TAG_Compound["foo", nil],
@@ -187,7 +187,7 @@ describe "NBTFile::load" do
                 Tokens::TAG_Byte["b", 56],
                 Tokens::TAG_End[nil, nil],
                 Tokens::TAG_End[nil, nil]],
-               {"foo" => {"bar" => {"a" => 123, "b" => 56}}}
+               ["foo", {"bar" => {"a" => 123, "b" => 56}}]
 
   nbtfile_load "should map lists to arrays",
                [Tokens::TAG_Compound["foo", nil],
@@ -196,7 +196,7 @@ describe "NBTFile::load" do
                 Tokens::TAG_Byte[1, 45],
                 Tokens::TAG_End[2, nil],
                 Tokens::TAG_End["", nil]],
-               {"foo" => {"bar" => [32, 45]}}
+               ["foo", {"bar" => [32, 45]}]
 end
 
 describe NBTFile::Reader do
