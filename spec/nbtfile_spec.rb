@@ -157,6 +157,19 @@ describe "NBTFile::tokenize" do
   end
 end
 
+describe "NBTFile::tokenize without a block" do
+  include ZlibHelpers
+
+  it_should_behave_like "readers and writers"
+
+  def check_reader_or_writer(input, tokens)
+    io = make_zipped_stream(input)
+    actual_tokens = NBTFile.tokenize(io)
+    actual_tokens.should be_a_kind_of(Enumerable)
+    actual_tokens.to_a.should == tokens
+  end
+end
+
 describe "NBTFile::emit" do
   include ZlibHelpers
 

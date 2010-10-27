@@ -481,8 +481,12 @@ def self.tokenize(io)
   end
   reader = Reader.new(io)
 
-  reader.each_token do |token|
-    yield token
+  if block_given?
+    reader.each_token { |token| yield token }
+  else
+    tokens = []
+    reader.each_token { |token| tokens << token }
+    tokens
   end
 end
 
