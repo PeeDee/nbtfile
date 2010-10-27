@@ -157,6 +157,48 @@ describe "NBTFile#tokenize" do
   end
 end
 
+describe "NBTFile#load" do
+  include ZlibHelpers
+
+  def self.nbtfile_load(description, tokens, result)
+    it description do
+      io = StringIO.new
+      writer = NBTFile::Writer.new(io)
+      for type, name, value in tokens
+        writer.emit_token(type, name, value)
+      end
+      writer.finish
+      actual_result = NBTFile.load(StringIO.new(io.string))
+      actual_result.should == result
+    end
+  end
+
+  nbtfile_load "should generate a top-level hash",
+               [[Tokens::TAG_COMPOUND, "foo", nil],
+                [Tokens::TAG_BYTE, "a", 19],
+                [Tokens::TAG_BYTE, "b", 23],
+                [Tokens::TAG_END]],
+               {"foo" => {"a" => 19, "b" => 23}}
+
+  nbtfile_load "should map compound structures to hashes",
+               [[Tokens::TAG_COMPOUND, "foo", nil],
+                [Tokens::TAG_COMPOUND, "bar", nil],
+                [Tokens::TAG_BYTE, "a", 123],
+                [Tokens::TAG_BYTE, "b", 56],
+                [Tokens::TAG_END, nil, nil],
+                [Tokens::TAG_END, nil, nil]],
+               {"foo" => {"bar" => {"a" => 123, "b" => 56}}}
+
+  nbtfile_load "should map lists to arrays",
+               [[Tokens::TAG_COMPOUND, "foo", nil],
+                [Tokens::TAG_LIST, "bar", Tokens::TAG_BYTE],
+                [Tokens::TAG_BYTE, 0, 32],
+                [Tokens::TAG_BYTE, 1, 45],
+                [Tokens::TAG_END, 2, nil],
+                [Tokens::TAG_END, "", nil]],
+               {"foo" => {"bar" => [32, 45]}}
+end
+
 describe NBTFile::Reader do
   include ZlibHelpers
 
@@ -175,16 +217,8 @@ end
 
 describe NBTFile::Writer do
   include ZlibHelpers
-  it_should_behave_like "readers and writers"
 
-  def unzip_string(string)
-    gz = Zlib::GzipReader.new(StringIO.new(string))
-    begin
-      gz.read
-    ensure
-      gz.close
-    end
-  end
+  it_should_behave_like "readers and writers"
 
   def check_reader_or_writer(output, tokens)
     stream = StringIO.new()
