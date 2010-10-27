@@ -44,14 +44,14 @@ module NBTFile
 TOKEN_CLASSES_BY_INDEX = []
 TOKEN_INDICES_BY_CLASS = {}
 
-Token = Struct.new :name, :value
+BaseToken = Struct.new :name, :value
 
 module Tokens
   tag_names = %w(End Byte Short Int Long Float Double
                  Byte_Array String List Compound)
   tag_names.each_with_index do |tag_name, index|
     tag_name = "TAG_#{tag_name}"
-    token_class = Class.new(Token)
+    token_class = Class.new(BaseToken)
 
     const_set tag_name, token_class
 
