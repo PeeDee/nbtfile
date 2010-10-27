@@ -7,9 +7,9 @@ require 'zlib'
 shared_examples_for "readers and writers" do
   Tokens = NBTFile::Tokens
 
-  def self.a_reader_or_writer(desc, serialized, tags)
+  def self.a_reader_or_writer(desc, serialized, tokens)
     it desc do
-      check_reader_or_writer(serialized, tags)
+      check_reader_or_writer(serialized, tokens)
     end
   end
 
@@ -112,11 +112,11 @@ shared_examples_for "readers and writers" do
     ["doubles", Tokens::TAG_DOUBLE, 0x06, lambda { |ns| ns.pack("G*") }]
   ]
 
-  for label, type, tag, pack in simple_list_types
+  for label, type, token, pack in simple_list_types
     values = [9, 5]
     a_reader_or_writer "should handle lists of #{label}",
                        "\x0a\x00\x03foo" \
-                       "\x09\x00\x03bar#{[tag].pack("C")}\x00\x00\x00\x02" \
+                       "\x09\x00\x03bar#{[token].pack("C")}\x00\x00\x00\x02" \
                        "#{pack.call(values)}" \
                        "\x00",
                        [[Tokens::TAG_COMPOUND, "foo", nil],
@@ -142,19 +142,34 @@ shared_examples_for "readers and writers" do
                       [Tokens::TAG_END, "", nil]]
 end
 
+describe "NBTFile#tokenize" do
+  include ZlibHelpers
+
+  it_should_behave_like "readers and writers"
+
+  def check_reader_or_writer(input, tokens)
+    io = make_zipped_stream(input)
+    actual_tokens = []
+    NBTFile.tokenize(io) do |token|
+      actual_tokens << token
+    end
+    actual_tokens.should == tokens
+  end
+end
+
 describe NBTFile::Reader do
   include ZlibHelpers
 
   it_should_behave_like "readers and writers"
 
-  def check_reader_or_writer(input, tags)
+  def check_reader_or_writer(input, tokens)
     io = make_zipped_stream(input)
     reader = NBTFile::Reader.new(io)
-    actual_tags = []
-    reader.each_token do |tag|
-      actual_tags << tag
+    actual_tokens = []
+    reader.each_token do |token|
+      actual_tokens << token
     end
-    actual_tags.should == tags
+    actual_tokens.should == tokens
   end
 end
 
@@ -171,12 +186,12 @@ describe NBTFile::Writer do
     end
   end
 
-  def check_reader_or_writer(output, tags)
+  def check_reader_or_writer(output, tokens)
     stream = StringIO.new()
     writer = NBTFile::Writer.new(stream)
     begin
-      for tag in tags
-        writer.emit_token(*tag)
+      for token in tokens
+        writer.emit_token(*token)
       end
     ensure
       writer.finish

@@ -466,17 +466,23 @@ class Writer
   end
 end
 
-def self.load(io)
+def self.tokenize(io)
   case io
   when String
     io = StringIO.new(io, "rb")
   end
-
   reader = Reader.new(io)
+
+  reader.each_token do |token|
+    yield token
+  end
+end
+
+def self.load(io)
   root = {}
   stack = [root]
 
-  reader.each_token do |type, name, value|
+  self.tokenize(io) do |type, name, value|
     case type
     when Tokens::TAG_COMPOUND
       value = {}
