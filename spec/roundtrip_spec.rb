@@ -17,8 +17,8 @@ describe NBTFile do
       reader = NBTFile::Reader.new(input)
       writer = NBTFile::Writer.new(output)
       begin
-        reader.each_tag do |tag, name, value|
-          writer.emit_tag(tag, name, value)
+        reader.each_token do |tag, name, value|
+          writer.emit_token(tag, name, value)
         end
       ensure
         writer.finish

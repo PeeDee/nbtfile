@@ -115,6 +115,18 @@ ABNF (see RFC 5234).
  TAG-LIST = %x09
  TAG-COMPOUND = %x0a
 
+== Interface
+
+== Low-level API
+
+=== NBTFile::Reader
+
+The NBTFile::Reader class provides the lowest-level
+
+== High-level API
+
+=== NBTFile.load
+
 == Note on Patches/Pull Requests
  
 * Fork the project.

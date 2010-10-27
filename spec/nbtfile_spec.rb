@@ -5,7 +5,7 @@ require 'stringio'
 require 'zlib'
 
 shared_examples_for "readers and writers" do
-  Types = NBTFile::Types
+  Tokens = NBTFile::Tokens
 
   def self.a_reader_or_writer(desc, serialized, tags)
     it desc do
@@ -16,80 +16,80 @@ shared_examples_for "readers and writers" do
   a_reader_or_writer "should handle basic documents",
                      "\x0a\x00\x03foo" \
                      "\x00",
-                     [[Types::TAG_Compound, "foo", nil],
-                      [Types::TAG_End, "", nil]]
+                     [[Tokens::TAG_COMPOUND, "foo", nil],
+                      [Tokens::TAG_END, "", nil]]
 
   a_reader_or_writer "should treat integers as signed",
                      "\x0a\x00\x03foo" \
                      "\x03\x00\x03bar\xff\xff\xff\xfe" \
                      "\x00",
-                     [[Types::TAG_Compound, "foo", nil],
-                      [Types::TAG_Int, "bar", -2],
-                      [Types::TAG_End, "", nil]]
+                     [[Tokens::TAG_COMPOUND, "foo", nil],
+                      [Tokens::TAG_INT, "bar", -2],
+                      [Tokens::TAG_END, "", nil]]
 
   a_reader_or_writer "should handle integer fields",
                      "\x0a\x00\x03foo" \
                      "\x03\x00\x03bar\x01\x02\x03\x04" \
                      "\x00",
-                     [[Types::TAG_Compound, "foo", nil],
-                      [Types::TAG_Int, "bar", 0x01020304],
-                      [Types::TAG_End, "", nil]]
+                     [[Tokens::TAG_COMPOUND, "foo", nil],
+                      [Tokens::TAG_INT, "bar", 0x01020304],
+                      [Tokens::TAG_END, "", nil]]
 
   a_reader_or_writer "should handle short fields",
                      "\x0a\x00\x03foo" \
                      "\x02\x00\x03bar\x4e\x5a" \
                      "\x00",
-                     [[Types::TAG_Compound, "foo", nil],
-                      [Types::TAG_Short, "bar", 0x4e5a],
-                      [Types::TAG_End, "", nil]]
+                     [[Tokens::TAG_COMPOUND, "foo", nil],
+                      [Tokens::TAG_SHORT, "bar", 0x4e5a],
+                      [Tokens::TAG_END, "", nil]]
 
   a_reader_or_writer "should handle byte fields",
                      "\x0a\x00\x03foo" \
                      "\x01\x00\x03bar\x4e" \
                      "\x00",
-                     [[Types::TAG_Compound, "foo", nil],
-                      [Types::TAG_Byte, "bar", 0x4e],
-                      [Types::TAG_End, "", nil]]
+                     [[Tokens::TAG_COMPOUND, "foo", nil],
+                      [Tokens::TAG_BYTE, "bar", 0x4e],
+                      [Tokens::TAG_END, "", nil]]
 
   a_reader_or_writer "should handle string fields",
                      "\x0a\x00\x03foo" \
                      "\x08\x00\x03bar\x00\x04hoge" \
                      "\x00",
-                     [[Types::TAG_Compound, "foo", nil],
-                      [Types::TAG_String, "bar", "hoge"],
-                      [Types::TAG_End, "", nil]]
+                     [[Tokens::TAG_COMPOUND, "foo", nil],
+                      [Tokens::TAG_STRING, "bar", "hoge"],
+                      [Tokens::TAG_END, "", nil]]
 
   a_reader_or_writer "should handle byte array fields",
                      "\x0a\x00\x03foo" \
                      "\x07\x00\x03bar\x00\x00\x00\x05\x01\x02\x03\x04\x05" \
                      "\x00",
-                     [[Types::TAG_Compound, "foo", nil],
-                      [Types::TAG_Byte_Array, "bar", "\x01\x02\x03\x04\x05"],
-                      [Types::TAG_End, "", nil]]
+                     [[Tokens::TAG_COMPOUND, "foo", nil],
+                      [Tokens::TAG_BYTE_ARRAY, "bar", "\x01\x02\x03\x04\x05"],
+                      [Tokens::TAG_END, "", nil]]
 
   a_reader_or_writer "should handle long fields",
                      "\x0a\x00\x03foo" \
                      "\x04\x00\x03bar\x01\x02\x03\x04\x05\x06\x07\x08" \
                      "\x00",
-                     [[Types::TAG_Compound, "foo", nil],
-                      [Types::TAG_Long, "bar", 0x0102030405060708],
-                      [Types::TAG_End, "", nil]]
+                     [[Tokens::TAG_COMPOUND, "foo", nil],
+                      [Tokens::TAG_LONG, "bar", 0x0102030405060708],
+                      [Tokens::TAG_END, "", nil]]
 
   a_reader_or_writer "should handle float fields",
                      "\x0a\x00\x03foo" \
                      "\x05\x00\x03bar\x3f\xa0\x00\x00" \
                      "\x00",
-                     [[Types::TAG_Compound, "foo", nil],
-                      [Types::TAG_Float, "bar", "\x3f\xa0\x00\x00".unpack("g").first],
-                      [Types::TAG_End, "", nil]]
+                     [[Tokens::TAG_COMPOUND, "foo", nil],
+                      [Tokens::TAG_FLOAT, "bar", "\x3f\xa0\x00\x00".unpack("g").first],
+                      [Tokens::TAG_END, "", nil]]
 
   a_reader_or_writer "should handle double fields",
                      "\x0a\x00\x03foo" \
                      "\x06\x00\x03bar\x3f\xf4\x00\x00\x00\x00\x00\x00" \
                      "\x00",
-                     [[Types::TAG_Compound, "foo", nil],
-                      [Types::TAG_Double, "bar", "\x3f\xf4\x00\x00\x00\x00\x00\x00".unpack("G").first],
-                      [Types::TAG_End, "", nil]]
+                     [[Tokens::TAG_COMPOUND, "foo", nil],
+                      [Tokens::TAG_DOUBLE, "bar", "\x3f\xf4\x00\x00\x00\x00\x00\x00".unpack("G").first],
+                      [Tokens::TAG_END, "", nil]]
 
   a_reader_or_writer "should handle nested compound fields",
                      "\x0a\x00\x03foo" \
@@ -97,19 +97,19 @@ shared_examples_for "readers and writers" do
                      "\x01\x00\x04hoge\x4e" \
                      "\x00" \
                      "\x00",
-                     [[Types::TAG_Compound, "foo", nil],
-                      [Types::TAG_Compound, "bar", nil],
-                      [Types::TAG_Byte, "hoge", 0x4e],
-                      [Types::TAG_End, "", nil],
-                      [Types::TAG_End, "", nil]]
+                     [[Tokens::TAG_COMPOUND, "foo", nil],
+                      [Tokens::TAG_COMPOUND, "bar", nil],
+                      [Tokens::TAG_BYTE, "hoge", 0x4e],
+                      [Tokens::TAG_END, "", nil],
+                      [Tokens::TAG_END, "", nil]]
 
   simple_list_types = [
-    ["bytes", Types::TAG_Byte, 0x01, lambda { |ns| ns.pack("C*") }],
-    ["shorts", Types::TAG_Short, 0x02, lambda { |ns| ns.pack("n*") }],
-    ["ints", Types::TAG_Int, 0x03, lambda { |ns| ns.pack("N*") }],
-    ["longs", Types::TAG_Long, 0x04, lambda { |ns| ns.map { |n| [n].pack("x4N") }.join("") }],
-    ["floats", Types::TAG_Float, 0x05, lambda { |ns| ns.pack("g*") }],
-    ["doubles", Types::TAG_Double, 0x06, lambda { |ns| ns.pack("G*") }]
+    ["bytes", Tokens::TAG_BYTE, 0x01, lambda { |ns| ns.pack("C*") }],
+    ["shorts", Tokens::TAG_SHORT, 0x02, lambda { |ns| ns.pack("n*") }],
+    ["ints", Tokens::TAG_INT, 0x03, lambda { |ns| ns.pack("N*") }],
+    ["longs", Tokens::TAG_LONG, 0x04, lambda { |ns| ns.map { |n| [n].pack("x4N") }.join("") }],
+    ["floats", Tokens::TAG_FLOAT, 0x05, lambda { |ns| ns.pack("g*") }],
+    ["doubles", Tokens::TAG_DOUBLE, 0x06, lambda { |ns| ns.pack("G*") }]
   ]
 
   for label, type, tag, pack in simple_list_types
@@ -119,12 +119,12 @@ shared_examples_for "readers and writers" do
                        "\x09\x00\x03bar#{[tag].pack("C")}\x00\x00\x00\x02" \
                        "#{pack.call(values)}" \
                        "\x00",
-                       [[Types::TAG_Compound, "foo", nil],
-                        [Types::TAG_List, "bar", type],
+                       [[Tokens::TAG_COMPOUND, "foo", nil],
+                        [Tokens::TAG_LIST, "bar", type],
                         [type, 0, values[0]],
                         [type, 1, values[1]],
-                        [Types::TAG_End, 2, nil],
-                      [Types::TAG_End, "", nil]] 
+                        [Tokens::TAG_END, 2, nil],
+                      [Tokens::TAG_END, "", nil]] 
   end
 
   a_reader_or_writer "should handle nested lists",
@@ -133,13 +133,13 @@ shared_examples_for "readers and writers" do
                      "\x01\x00\x00\x00\x01" \
                      "\x4a" \
                      "\x00",
-                     [[Types::TAG_Compound, "foo", nil],
-                      [Types::TAG_List, "bar", Types::TAG_List],
-                      [Types::TAG_List, 0, Types::TAG_Byte],
-                      [Types::TAG_Byte, 0, 0x4a],
-                      [Types::TAG_End, 1, nil],
-                      [Types::TAG_End, 1, nil],
-                      [Types::TAG_End, "", nil]]
+                     [[Tokens::TAG_COMPOUND, "foo", nil],
+                      [Tokens::TAG_LIST, "bar", Tokens::TAG_LIST],
+                      [Tokens::TAG_LIST, 0, Tokens::TAG_BYTE],
+                      [Tokens::TAG_BYTE, 0, 0x4a],
+                      [Tokens::TAG_END, 1, nil],
+                      [Tokens::TAG_END, 1, nil],
+                      [Tokens::TAG_END, "", nil]]
 end
 
 describe NBTFile::Reader do
@@ -151,7 +151,7 @@ describe NBTFile::Reader do
     io = make_zipped_stream(input)
     reader = NBTFile::Reader.new(io)
     actual_tags = []
-    reader.each_tag do |tag|
+    reader.each_token do |tag|
       actual_tags << tag
     end
     actual_tags.should == tags
@@ -176,7 +176,7 @@ describe NBTFile::Writer do
     writer = NBTFile::Writer.new(stream)
     begin
       for tag in tags
-        writer.emit_tag(*tag)
+        writer.emit_token(*tag)
       end
     ensure
       writer.finish
@@ -189,12 +189,12 @@ describe NBTFile::Writer do
     output = StringIO.new()
     writer = NBTFile::Writer.new(output)
     begin
-      writer.emit_tag(Types::TAG_Compound, "test", nil)
-      writer.emit_list(Types::TAG_Byte, "foo") do
+      writer.emit_token(Tokens::TAG_COMPOUND, "test", nil)
+      writer.emit_list(Tokens::TAG_BYTE, "foo") do
         writer.emit_item(12)
         writer.emit_item(43)
       end
-      writer.emit_tag(Types::TAG_End, nil, nil)
+      writer.emit_token(Tokens::TAG_END, nil, nil)
     ensure
       writer.finish
     end
@@ -210,12 +210,12 @@ describe NBTFile::Writer do
     output = StringIO.new()
     writer = NBTFile::Writer.new(output)
     begin
-      writer.emit_tag(Types::TAG_Compound, "test", nil)
+      writer.emit_token(Tokens::TAG_COMPOUND, "test", nil)
       writer.emit_compound("xyz") do
-        writer.emit_tag(Types::TAG_Byte, "foo", 0x08)
-        writer.emit_tag(Types::TAG_Byte, "bar", 0x02)
+        writer.emit_token(Tokens::TAG_BYTE, "foo", 0x08)
+        writer.emit_token(Tokens::TAG_BYTE, "bar", 0x02)
       end
-      writer.emit_tag(Types::TAG_End, nil, nil)
+      writer.emit_token(Tokens::TAG_END, nil, nil)
     ensure
       writer.finish
     end
