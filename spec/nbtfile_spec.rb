@@ -5,7 +5,7 @@ require 'stringio'
 require 'zlib'
 
 shared_examples_for "readers and writers" do
-  Tokens = NBTFile::Tokens
+  Tokens = NBTFile::Tokens unless defined? Tokens
 
   def self.a_reader_or_writer(desc, serialized, tokens)
     it desc do
