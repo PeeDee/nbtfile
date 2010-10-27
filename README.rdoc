@@ -119,9 +119,7 @@ ABNF (see RFC 5234).
 
 == Low-level API
 
-=== NBTFile::Reader
-
-The NBTFile::Reader class provides the lowest-level
+=== NBTFile.tokenize
 
 == High-level API
 
