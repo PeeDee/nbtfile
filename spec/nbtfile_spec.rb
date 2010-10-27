@@ -157,17 +157,71 @@ describe "NBTFile::tokenize" do
   end
 end
 
+describe "NBTFile::emit" do
+  include ZlibHelpers
+
+  it_should_behave_like "readers and writers"
+
+  def check_reader_or_writer(output, tokens)
+    io = StringIO.new()
+    NBTFile.emit(io) do |writer|
+      for token in tokens
+        writer.emit_token(token)
+      end
+    end
+    actual_output = unzip_string(io.string)
+    actual_output.should == output
+  end
+
+  def self.emit_shorthand(description, output, &block)
+    it description do
+      io = StringIO.new()
+      NBTFile.emit(io, &block)
+      actual_output = unzip_string(io.string)
+      actual_output.should == output
+    end
+  end
+
+  emit_shorthand "should support shorthand for emitting lists",
+                 "\x0a\x00\x04test" \
+                 "\x09\x00\x03foo\x01\x00\x00\x00\x02" \
+                 "\x0c\x2b" \
+                 "\x00" do |writer|
+    writer.emit_token(Tokens::TAG_Compound["test", nil])
+    writer.emit_list("foo", Tokens::TAG_Byte) do
+      writer.emit_item(12)
+      writer.emit_item(43)
+    end
+    writer.emit_token(Tokens::TAG_End[nil, nil])
+  end
+
+  emit_shorthand "should support shorthand for emitting compound structures",
+                 "\x0a\x00\x04test" \
+                 "\x0a\x00\x03xyz" \
+                 "\x01\x00\x03foo\x08" \
+                 "\x01\x00\x03bar\x02" \
+                 "\x00" \
+                 "\x00" do |writer|
+    writer.emit_token(Tokens::TAG_Compound["test", nil])
+    writer.emit_compound("xyz") do
+      writer.emit_token(Tokens::TAG_Byte["foo", 0x08])
+      writer.emit_token(Tokens::TAG_Byte["bar", 0x02])
+    end
+    writer.emit_token(Tokens::TAG_End[nil, nil])
+  end
+end
+
 describe "NBTFile::load" do
   include ZlibHelpers
 
   def self.nbtfile_load(description, tokens, result)
     it description do
       io = StringIO.new
-      writer = NBTFile::Writer.new(io)
-      for token in tokens
-        writer.emit_token(token)
+      NBTFile.emit(io) do |writer|
+        for token in tokens
+          writer.emit_token(token)
+        end
       end
-      writer.finish
       actual_result = NBTFile.load(StringIO.new(io.string))
       actual_result.should == result
     end
@@ -197,83 +251,4 @@ describe "NBTFile::load" do
                 Tokens::TAG_End[2, nil],
                 Tokens::TAG_End["", nil]],
                ["foo", {"bar" => [32, 45]}]
-end
-
-describe NBTFile::Reader do
-  include ZlibHelpers
-
-  it_should_behave_like "readers and writers"
-
-  def check_reader_or_writer(input, tokens)
-    io = make_zipped_stream(input)
-    reader = NBTFile::Reader.new(io)
-    actual_tokens = []
-    reader.each_token do |token|
-      actual_tokens << token
-    end
-    actual_tokens.should == tokens
-  end
-end
-
-describe NBTFile::Writer do
-  include ZlibHelpers
-
-  it_should_behave_like "readers and writers"
-
-  def check_reader_or_writer(output, tokens)
-    stream = StringIO.new()
-    writer = NBTFile::Writer.new(stream)
-    begin
-      for token in tokens
-        writer.emit_token(token)
-      end
-    ensure
-      writer.finish
-    end
-    actual_output = unzip_string(stream.string)
-    actual_output.should == output
-  end
-
-  it "should support shorthand for emitting lists" do
-    output = StringIO.new()
-    writer = NBTFile::Writer.new(output)
-    begin
-      writer.emit_token(Tokens::TAG_Compound["test", nil])
-      writer.emit_list("foo", Tokens::TAG_Byte) do
-        writer.emit_item(12)
-        writer.emit_item(43)
-      end
-      writer.emit_token(Tokens::TAG_End[nil, nil])
-    ensure
-      writer.finish
-    end
-
-    actual_output = unzip_string(output.string)
-    actual_output.should == "\x0a\x00\x04test" \
-                            "\x09\x00\x03foo\x01\x00\x00\x00\x02" \
-                            "\x0c\x2b" \
-                            "\x00"
-  end
-
-  it "should support shorthand for emitting compound structures" do
-    output = StringIO.new()
-    writer = NBTFile::Writer.new(output)
-    begin
-      writer.emit_token(Tokens::TAG_Compound["test", nil])
-      writer.emit_compound("xyz") do
-        writer.emit_token(Tokens::TAG_Byte["foo", 0x08])
-        writer.emit_token(Tokens::TAG_Byte["bar", 0x02])
-      end
-      writer.emit_token(Tokens::TAG_End[nil, nil])
-    ensure
-      writer.finish
-    end
-    actual_output = unzip_string(output.string)
-    actual_output.should == "\x0a\x00\x04test" \
-                            "\x0a\x00\x03xyz" \
-                            "\x01\x00\x03foo\x08" \
-                            "\x01\x00\x03bar\x02" \
-                            "\x00" \
-                            "\x00"
-  end
 end

@@ -121,6 +121,8 @@ ABNF (see RFC 5234).
 
 === NBTFile.tokenize
 
+=== NBTFile.emit
+
 == High-level API
 
 === NBTFile.load

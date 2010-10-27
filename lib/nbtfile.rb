@@ -486,6 +486,15 @@ def self.tokenize(io)
   end
 end
 
+def self.emit(io)
+  writer = Writer.new(io)
+  begin
+    yield writer
+  ensure
+    writer.finish
+  end
+end
+
 def self.load(io)
   root = {}
   stack = [root]
