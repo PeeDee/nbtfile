@@ -5,7 +5,7 @@ begin
   require 'jeweler'
   Jeweler::Tasks.new do |gem|
     gem.name = "nbtfile"
-    gem.summary = %Q{TODO: one-line summary of your gem}
+    gem.summary = %Q{nbtfile provides a low-level API for reading and writing files using Minecraft's NBT serialization format}
     gem.description = %Q{Library for reading and writing NBT files (as used by Minecraft).}
     gem.email = "mental@rydia.net"
     gem.homepage = "http://github.com/mental/nbtfile"
