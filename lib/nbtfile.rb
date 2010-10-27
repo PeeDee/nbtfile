@@ -50,7 +50,7 @@ module Tokens
   tag_names = %w(End Byte Short Int Long Float Double
                  Byte_Array String List Compound)
   tag_names.each_with_index do |tag_name, index|
-    tag_name = "TAG_#{tag_name.upcase}"
+    tag_name = "TAG_#{tag_name}"
     token_class = Class.new(Token)
 
     const_set tag_name, token_class
@@ -140,30 +140,30 @@ module ReadMethods
     next_state = state
 
     case
-    when type == TAG_END
+    when type == TAG_End
       next_state = cont
       value = nil
-    when type == TAG_BYTE
+    when type == TAG_Byte
       value = read_byte(io)
-    when type == TAG_SHORT
+    when type == TAG_Short
       value = read_short(io)
-    when type == TAG_INT
+    when type == TAG_Int
       value = read_int(io)
-    when type == TAG_LONG
+    when type == TAG_Long
       value = read_long(io)
-    when type == TAG_FLOAT
+    when type == TAG_Float
       value = read_float(io)
-    when type == TAG_DOUBLE
+    when type == TAG_Double
       value = read_double(io)
-    when type == TAG_BYTE_ARRAY
+    when type == TAG_Byte_Array
       value = read_byte_array(io)
-    when type == TAG_STRING
+    when type == TAG_String
       value = read_string(io)
-    when type == TAG_LIST
+    when type == TAG_List
       list_type, list_length = read_list_header(io)
       next_state = ListReaderState.new(state, list_type, list_length)
       value = list_type
-    when type == TAG_COMPOUND
+    when type == TAG_Compound
       next_state = CompoundReaderState.new(state)
     end
 
@@ -177,7 +177,7 @@ class TopReaderState
 
   def get_token(io)
     type = read_type(io)
-    raise RuntimeError, "expected TAG_COMPOUND" unless type == TAG_COMPOUND
+    raise RuntimeError, "expected TAG_Compound" unless type == TAG_Compound
     name = read_string(io)
     end_state = EndReaderState.new()
     next_state = CompoundReaderState.new(end_state)
@@ -196,7 +196,7 @@ class CompoundReaderState
   def get_token(io)
     type = read_type(io)
 
-    if type != TAG_END
+    if type != TAG_End
       name = read_string(io)
     else
       name = ""
@@ -221,7 +221,7 @@ class ListReaderState
     if @offset < @length
       type = @type
     else
-      type = TAG_END
+      type = TAG_End
     end
 
     index = @offset
@@ -314,31 +314,31 @@ module WriteMethods
     next_state = state
 
     case
-    when type == TAG_BYTE
+    when type == TAG_Byte
       emit_byte(io, value)
-    when type == TAG_SHORT
+    when type == TAG_Short
       emit_short(io, value)
-    when type == TAG_INT
+    when type == TAG_Int
       emit_int(io, value)
-    when type == TAG_LONG
+    when type == TAG_Long
       emit_long(io, value)
-    when type == TAG_FLOAT
+    when type == TAG_Float
       emit_float(io, value)
-    when type == TAG_DOUBLE
+    when type == TAG_Double
       emit_double(io, value)
-    when type == TAG_BYTE_ARRAY
+    when type == TAG_Byte_Array
       emit_byte_array(io, value)
-    when type == TAG_STRING
+    when type == TAG_String
       emit_string(io, value)
-    when type == TAG_FLOAT
+    when type == TAG_Float
       emit_float(io, value)
-    when type == TAG_DOUBLE
+    when type == TAG_Double
       emit_double(io, value)
-    when type == TAG_LIST
+    when type == TAG_List
       next_state = ListWriterState.new(state, value, capturing)
-    when type == TAG_COMPOUND
+    when type == TAG_Compound
       next_state = CompoundWriterState.new(state, capturing)
-    when type == TAG_END
+    when type == TAG_End
       next_state = cont
     else
       raise RuntimeError, "Unexpected token #{type}"
@@ -354,7 +354,7 @@ class TopWriterState
 
   def emit_token(io, token)
     case token
-    when TAG_COMPOUND
+    when TAG_Compound
       emit_type(io, token.class)
       emit_string(io, token.name)
       end_state = EndWriterState.new()
@@ -379,7 +379,7 @@ class CompoundWriterState
     type = token.class
 
     emit_type(out, type)
-    emit_string(out, token.name) unless type == TAG_END
+    emit_string(out, token.name) unless type == TAG_End
 
     emit_value(out, type, token.value, @capturing, self, @cont)
   end
@@ -404,7 +404,7 @@ class ListWriterState
   def emit_token(io, token)
     type = token.class
 
-    if type == TAG_END
+    if type == TAG_End
       out = @capturing || io
       emit_list_header(out, @type, @count)
       out.write(@value.string)
@@ -448,20 +448,20 @@ class Writer
   end
 
   def emit_compound(name=nil)
-    emit_token(TAG_COMPOUND[name, nil])
+    emit_token(TAG_Compound[name, nil])
     begin
       yield
     ensure
-      emit_token(TAG_END[nil, nil])
+      emit_token(TAG_End[nil, nil])
     end
   end
 
   def emit_list(type, name=nil)
-    emit_token(TAG_LIST[name, type])
+    emit_token(TAG_List[name, type])
     begin
       yield
     ensure
-      emit_token(TAG_END[nil, nil])
+      emit_token(TAG_End[nil, nil])
     end
   end
 
@@ -492,11 +492,11 @@ def self.load(io)
 
   self.tokenize(io) do |token|
     case token
-    when Tokens::TAG_COMPOUND
+    when Tokens::TAG_Compound
       value = {}
-    when Tokens::TAG_LIST
+    when Tokens::TAG_List
       value = []
-    when Tokens::TAG_END
+    when Tokens::TAG_End
       stack.pop
       next
     else
@@ -506,7 +506,7 @@ def self.load(io)
     stack.last[token.name] = value
 
     case token
-    when Tokens::TAG_COMPOUND, Tokens::TAG_LIST
+    when Tokens::TAG_Compound, Tokens::TAG_List
       stack.push value
     end
   end
