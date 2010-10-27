@@ -142,7 +142,7 @@ shared_examples_for "readers and writers" do
                       [Tokens::TAG_END, "", nil]]
 end
 
-describe "NBTFile#tokenize" do
+describe "NBTFile::tokenize" do
   include ZlibHelpers
 
   it_should_behave_like "readers and writers"
@@ -157,7 +157,7 @@ describe "NBTFile#tokenize" do
   end
 end
 
-describe "NBTFile#load" do
+describe "NBTFile::load" do
   include ZlibHelpers
 
   def self.nbtfile_load(description, tokens, result)
