@@ -9,6 +9,7 @@ shared_examples_for "readers and writers" do
 
   def self.a_reader_or_writer(desc, serialized, tokens)
     it desc do
+      serialized._nbtfile_force_encoding("BINARY")
       check_reader_or_writer(serialized, tokens)
     end
   end
@@ -229,7 +230,7 @@ describe "NBTFile::load" do
 
   def self.nbtfile_load(description, tokens, result)
     it description do
-      io = StringIO.new
+      io = StringIO.new()
       NBTFile.emit(io) do |writer|
         for token in tokens
           writer.emit_token(token)

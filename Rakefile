@@ -30,6 +30,8 @@ end
 
 task :spec => :check_dependencies
 
+task :specs => :spec
+
 task :default => :spec
 
 require 'rake/rdoctask'
