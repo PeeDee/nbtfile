@@ -34,8 +34,19 @@ class String
   begin
     alias_method :_nbtfile_force_encoding, :force_encoding
   rescue NameError
-    def _nbtfile_force_encoding(encoding)
-    end
+    def _nbtfile_force_encoding(encoding) ; end
+  end
+
+  begin
+    alias_method :_nbtfile_encode, :encode
+  rescue NameError
+    def _nbtfile_encode(encoding) ; dup ; end
+  end
+
+  begin
+    alias_method :_nbtfile_bytesize, :bytesize
+  rescue NameError
+    alias_method :_nbtfile_bytesize, :size
   end
 end
 
@@ -297,7 +308,8 @@ module WriteMethods
   end
 
   def emit_string(io, value)
-    emit_short(io, value.length)
+    value = value._nbtfile_encode("UTF-8")
+    emit_short(io, value._nbtfile_bytesize)
     io.write(value)
   end
 

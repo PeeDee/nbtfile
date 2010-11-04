@@ -196,6 +196,15 @@ describe "NBTFile::emit" do
     end
   end
 
+  it "should convert strings to UTF-8 (on encoding-aware rubies)" do
+    check_reader_or_writer "\x0a\x00\x03foo" \
+                           "\x08\x00\x03bar\x00\x04hoge" \
+                           "\x00",
+                           [Tokens::TAG_Compound["foo", nil],
+                            Tokens::TAG_String["bar", "hoge"._nbtfile_encode("UTF-16LE")],
+                            Tokens::TAG_End["", nil]]
+  end
+
   emit_shorthand "should support shorthand for emitting lists",
                  "\x0a\x00\x04test" \
                  "\x09\x00\x03foo\x01\x00\x00\x00\x02" \
