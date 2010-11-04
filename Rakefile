@@ -1,5 +1,8 @@
 require 'rubygems'
 require 'rake'
+require 'rake/clean'
+
+CLEAN << FileList['**/*.rbc']
 
 begin
   require 'jeweler'
