@@ -48,9 +48,27 @@ class String
   rescue NameError
     alias_method :_nbtfile_bytesize, :size
   end
+
+  begin
+    alias_method :_nbtfile_valid_encoding?, :valid_encoding?
+  rescue NameError
+    require 'iconv'
+
+    def _nbtfile_valid_encoding?
+      begin
+        Iconv.conv("UTF-8", "UTF-8", self)
+        true
+      rescue Iconv::IllegalSequence
+        false
+      end
+    end
+  end
 end
 
 module NBTFile
+
+class EncodingError < RuntimeError
+end
 
 TOKEN_CLASSES_BY_INDEX = []
 TOKEN_INDICES_BY_CLASS = {}
@@ -129,7 +147,9 @@ module ReadMethods
 
   def read_byte_array(io)
     length = read_int(io)
-    read_raw(io, length)
+    value = read_raw(io, length)
+    value._nbtfile_force_encoding("BINARY")
+    value
   end
 
   def read_list_header(io)
@@ -303,12 +323,17 @@ module WriteMethods
   end
 
   def emit_byte_array(io, value)
-    emit_int(io, value.length)
+    value = value.dup
+    value._nbtfile_force_encoding("BINARY")
+    emit_int(io, value._nbtfile_bytesize)
     io.write(value)
   end
 
   def emit_string(io, value)
     value = value._nbtfile_encode("UTF-8")
+    unless value._nbtfile_valid_encoding?
+      raise EncodingError, "Invalid character sequence"
+    end
     emit_short(io, value._nbtfile_bytesize)
     io.write(value)
   end
@@ -448,7 +473,7 @@ class EndWriterState
 end
 
 class Writer
-  include WriteMethods
+  include Tokens
 
   def initialize(stream)
     @gz = Zlib::GzipWriter.new(stream)

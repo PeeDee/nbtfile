@@ -205,6 +205,19 @@ describe "NBTFile::emit" do
                             Tokens::TAG_End["", nil]]
   end
 
+  it "should reject malformed UTF-8 strings" do
+    io = StringIO.new
+    NBTFile.emit(io) do |writer|
+      writer.emit_compound("foo") do
+        lambda {
+          str = "hoge\xff"
+          str._nbtfile_force_encoding("UTF-8")
+          writer.emit_token(Tokens::TAG_String["bar", str])
+        }.should raise_error(NBTFile::EncodingError)
+      end
+    end
+  end
+
   emit_shorthand "should support shorthand for emitting lists",
                  "\x0a\x00\x04test" \
                  "\x09\x00\x03foo\x01\x00\x00\x00\x02" \
