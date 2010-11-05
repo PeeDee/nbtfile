@@ -21,6 +21,8 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+# encoding: UTF-8
+
 require 'zlib'
 require 'stringio'
 
@@ -561,7 +563,8 @@ def self.load(io)
     end
   end
 
-  root.first
+  pair = root.first
+  {'name' => pair.first, 'body' => pair.last}
 end
 
 end
