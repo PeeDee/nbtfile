@@ -564,4 +564,159 @@ def self.load(io)
   root.first
 end
 
+module Types
+  module Base
+  end
+
+  class BaseInteger
+    include Base
+
+    attr_reader :value
+
+    def self.make_subclass(n_bits)
+      subclass = Class.new(self)
+      limit = 1 << (n_bits - 1)
+      subclass.const_set(:RANGE, -limit..(limit-1))
+      subclass
+    end
+
+    def initialize(value)
+      unless self.class::RANGE.include? value
+        raise RangeError, "Value out of range"
+      end
+      int_value = value.to_int
+      if int_value != value
+        raise TypeError, "Not an integer"
+      end
+      @value = value
+    end
+
+    def ==(other)
+      if other.respond_to? :to_int
+        self.to_int == other.to_int
+      else
+        false
+      end
+    end
+
+    def eql?(other)
+      other.class == self.class and other.value == @value
+    end
+
+    def hash
+      [self.class, @value].hash
+    end
+
+    alias_method :to_int, :value
+    alias_method :to_i, :value
+  end
+
+  Byte = BaseInteger.make_subclass(8)
+  Short = BaseInteger.make_subclass(16)
+  Int = BaseInteger.make_subclass(32)
+  Long = BaseInteger.make_subclass(64)
+
+  class FloatBase
+    include Base
+
+    attr_reader :value
+
+    def initialize(value)
+      unless Numeric === value
+        raise TypeError
+      end
+      float_value = value.to_f
+      @value = float_value
+    end
+
+    def ==(other)
+      if Numeric === other or FloatBase === other
+        @value == other.to_f
+      else
+        false
+      end
+    end
+
+    def eql?(other)
+      other.class == self.class and other.value == @value
+    end
+
+    def hash
+      [self.class, @value].hash
+    end
+
+    alias_method :to_f, :value
+  end
+
+  class Float < FloatBase
+  end
+
+  class Double < FloatBase
+  end
+
+  class String
+    include Base
+  end
+
+  class ByteArray
+    include Base
+  end
+
+  class List
+    include Base
+    include Enumerable
+
+    def initialize(type)
+      @type = type
+      @items = []
+    end
+
+    def <<(item)
+      unless item.instance_of? @type
+        raise TypeError, "Items should be instances of #{@type}"
+      end
+      @items << item
+      self
+    end
+
+    def each
+      if block_given?
+        @items.each { |item| yield item }
+        self
+      else
+        @items.each
+      end
+    end
+
+    def length
+      @items.length
+    end
+  end
+
+  class Compound
+    include Base
+
+    def initialize
+      @hash = {}
+    end
+
+    def []=(key, value)
+      unless Base === value
+        raise TypeError, "Values must be NBT types"
+      end
+      @hash[key] = value
+      value
+    end
+
+    def [](key)
+      @hash[key]
+    end
+
+    def delete(key)
+      @hash.delete key
+      self
+    end
+  end
+end
+
 end
