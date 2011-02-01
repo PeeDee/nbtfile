@@ -656,10 +656,33 @@ module Types
 
   class String
     include Base
+
+    attr_reader :value
+
+    def initialize(value)
+      unless value.respond_to? :to_str
+        raise TypeError, "String or string-like expected"
+      end
+      @value = value.to_str
+    end
+
+    def to_s
+      @value.dup
+    end
+    alias_method :to_str, :to_s
   end
 
   class ByteArray
     include Base
+
+    attr_reader :value
+
+    def initialize(value)
+      unless value.respond_to? :to_str
+        raise TypeError, "String or string-like expected"
+      end
+      @value = value.to_str
+    end
   end
 
   class List

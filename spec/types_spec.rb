@@ -108,6 +108,14 @@ describe NBTFile::Types::String do
   before :all do
     @type = NBTFile::Types::String
   end
+
+  it "should have a #value accessor" do
+    NBTFile::Types::String.new("foo").value.should == "foo"
+  end
+
+  it "should support #to_s" do
+    NBTFile::Types::String.new("foo").to_s.should == "foo"
+  end
 end
 
 describe NBTFile::Types::ByteArray do
@@ -115,6 +123,10 @@ describe NBTFile::Types::ByteArray do
 
   before :all do
     @type = NBTFile::Types::ByteArray
+  end
+
+  it "should have a #value accessor" do
+    NBTFile::Types::ByteArray.new("foo").value.should == "foo"
   end
 end
 
