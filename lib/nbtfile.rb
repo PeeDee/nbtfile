@@ -23,6 +23,7 @@
 
 require 'zlib'
 require 'stringio'
+require 'yaml'
 
 class String
   begin
@@ -562,6 +563,10 @@ def self.load(io)
   end
 
   root.first
+end
+
+def self.transcode_to_yaml(input, output)
+  YAML.dump(load(input), output)
 end
 
 module Types

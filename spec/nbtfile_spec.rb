@@ -288,3 +288,27 @@ describe "NBTFile::load" do
                 Tokens::TAG_End["", nil]],
                ["foo", {"bar" => [32, 45]}]
 end
+
+describe "NBTFile::transcode_to_yaml" do
+  def self.nbtfile_transcode(description, tokens, result)
+    it description do
+      io = StringIO.new()
+      NBTFile.emit(io) do |writer|
+        for token in tokens
+          writer.emit_token(token)
+        end
+      end
+      out = StringIO.new()
+      NBTFile.transcode_to_yaml(StringIO.new(io.string), out)
+      actual_result = YAML.load(out.string)
+      actual_result.should == result
+    end
+  end
+
+  nbtfile_transcode "should transcode to YAML",
+                    [Tokens::TAG_Compound["foo", nil],
+                     Tokens::TAG_Byte["a", 19],
+                     Tokens::TAG_Byte["b", 23],
+                     Tokens::TAG_End[nil, nil]],
+                    ["foo", {"a" => 19, "b" => 23}]
+end
