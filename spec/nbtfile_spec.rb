@@ -125,7 +125,7 @@ shared_examples_for "readers and writers" do
                         type[0, values[0]],
                         type[1, values[1]],
                         Tokens::TAG_End[2, nil],
-                      Tokens::TAG_End["", nil]] 
+                       Tokens::TAG_End["", nil]] 
   end
 
   a_reader_or_writer "should handle nested lists",
