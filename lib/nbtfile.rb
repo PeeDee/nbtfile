@@ -373,9 +373,9 @@ module WriteMethods
     when type == TAG_Double
       emit_double(io, value)
     when type == TAG_List
-      next_state = ListWriterState.new(state, value, capturing)
+      next_state = ListEmitterState.new(state, value, capturing)
     when type == TAG_Compound
-      next_state = CompoundWriterState.new(state, capturing)
+      next_state = CompoundEmitterState.new(state, capturing)
     when type == TAG_End
       next_state = cont
     else
@@ -386,7 +386,7 @@ module WriteMethods
   end
 end
 
-class TopWriterState
+class TopEmitterState
   include WriteMethods
   include Tokens
 
@@ -395,14 +395,14 @@ class TopWriterState
     when TAG_Compound
       emit_type(io, token.class)
       emit_string(io, token.name)
-      end_state = EndWriterState.new()
-      next_state = CompoundWriterState.new(end_state, nil)
+      end_state = EndEmitterState.new()
+      next_state = CompoundEmitterState.new(end_state, nil)
       next_state
     end
   end
 end
 
-class CompoundWriterState
+class CompoundEmitterState
   include WriteMethods
   include Tokens
 
@@ -427,7 +427,7 @@ class CompoundWriterState
   end
 end
 
-class ListWriterState
+class ListEmitterState
   include WriteMethods
   include Tokens
 
@@ -463,7 +463,7 @@ class ListWriterState
   end
 end
 
-class EndWriterState
+class EndEmitterState
   def emit_token(io, token)
     raise RuntimeError, "unexpected token #{token.class} after end"
   end
@@ -473,12 +473,12 @@ class EndWriterState
   end
 end
 
-class Writer
+class Emitter
   include Tokens
 
   def initialize(stream)
     @gz = Zlib::GzipWriter.new(stream)
-    @state = TopWriterState.new()
+    @state = TopEmitterState.new()
   end
 
   def emit_token(token)
@@ -529,7 +529,7 @@ def self.tokenize(io)
 end
 
 def self.emit(io)
-  writer = Writer.new(io)
+  writer = Emitter.new(io)
   begin
     yield writer
   ensure

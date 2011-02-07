@@ -15,7 +15,7 @@ describe NBTFile do
       output = StringIO.new()
 
       reader = NBTFile::Reader.new(input)
-      writer = NBTFile::Writer.new(output)
+      writer = NBTFile::Emitter.new(output)
       begin
         reader.each_token do |token|
           writer.emit_token(token)
