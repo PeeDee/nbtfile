@@ -193,17 +193,17 @@ module ReadMethods
       value = read_string(io)
     when type == TAG_List
       list_type, list_length = read_list_header(io)
-      next_state = ListReaderState.new(state, list_type, list_length)
+      next_state = ListTokenizerState.new(state, list_type, list_length)
       value = list_type
     when type == TAG_Compound
-      next_state = CompoundReaderState.new(state)
+      next_state = CompoundTokenizerState.new(state)
     end
 
     [next_state, type[name, value]]
   end
 end
 
-class TopReaderState
+class TopTokenizerState
   include ReadMethods
   include Tokens
 
@@ -211,13 +211,13 @@ class TopReaderState
     type = read_type(io)
     raise RuntimeError, "expected TAG_Compound" unless type == TAG_Compound
     name = read_string(io)
-    end_state = EndReaderState.new()
-    next_state = CompoundReaderState.new(end_state)
+    end_state = EndTokenizerState.new()
+    next_state = CompoundTokenizerState.new(end_state)
     [next_state, type[name, nil]]
   end
 end
 
-class CompoundReaderState
+class CompoundTokenizerState
   include ReadMethods
   include Tokens
 
@@ -238,7 +238,7 @@ class CompoundReaderState
   end
 end
 
-class ListReaderState
+class ListTokenizerState
   include ReadMethods
   include Tokens
 
@@ -263,16 +263,16 @@ class ListReaderState
   end
 end
 
-class EndReaderState
+class EndTokenizerState
   def get_token(io)
     [self, nil]
   end
 end
 
-class Reader
+class Tokenizer
   def initialize(io)
     @gz = Zlib::GzipReader.new(io)
-    @state = TopReaderState.new()
+    @state = TopTokenizerState.new()
   end
 
   def each_token
@@ -287,7 +287,7 @@ class Reader
   end
 end
 
-module WriteMethods
+module EmitMethods
   include Tokens
   include CommonMethods
 
@@ -387,7 +387,7 @@ module WriteMethods
 end
 
 class TopEmitterState
-  include WriteMethods
+  include EmitMethods
   include Tokens
 
   def emit_token(io, token)
@@ -403,7 +403,7 @@ class TopEmitterState
 end
 
 class CompoundEmitterState
-  include WriteMethods
+  include EmitMethods
   include Tokens
 
   def initialize(cont, capturing)
@@ -428,7 +428,7 @@ class CompoundEmitterState
 end
 
 class ListEmitterState
-  include WriteMethods
+  include EmitMethods
   include Tokens
 
   def initialize(cont, type, capturing)
@@ -517,7 +517,7 @@ def self.tokenize(io)
   when String
     io = StringIO.new(io, "rb")
   end
-  reader = Reader.new(io)
+  reader = Tokenizer.new(io)
 
   if block_given?
     reader.each_token { |token| yield token }
