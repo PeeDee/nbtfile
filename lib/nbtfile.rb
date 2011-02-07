@@ -575,10 +575,6 @@ def self.read(io)
 
   self.tokenize(io) do |token|
     case token
-    when Tokens::TAG_Compound
-      value = Types::Compound.new
-    when Tokens::TAG_List
-      value = Types::List.new(token.value)
     when Tokens::TAG_Byte
       value = Types::Byte.new(token.value)
     when Tokens::TAG_Short
@@ -591,6 +587,10 @@ def self.read(io)
       value = Types::String.new(token.value)
     when Tokens::TAG_ByteArray
       value = Types::ByteArray.new(token.value)
+    when Tokens::TAG_List
+      value = Types::List.new(token.value)
+    when Tokens::TAG_Compound
+      value = Types::Compound.new
     when Tokens::TAG_End
       stack.pop
       next
