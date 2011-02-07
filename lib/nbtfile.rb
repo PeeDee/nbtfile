@@ -569,15 +569,70 @@ def self.transcode_to_yaml(input, output)
   YAML.dump(load(input), output)
 end
 
+def self.read(io)
+  root = {}
+  stack = [root]
+
+  self.tokenize(io) do |token|
+    case token
+    when Tokens::TAG_Compound
+      value = Types::Compound.new
+    when Tokens::TAG_List
+      value = Types::List.new(token.value)
+    when Tokens::TAG_Byte
+      value = Types::Byte.new(token.value)
+    when Tokens::TAG_Short
+      value = Types::Short.new(token.value)
+    when Tokens::TAG_Long
+      value = Types::Long.new(token.value)
+    when Tokens::TAG_Float
+      value = Types::Float.new(token.value)
+    when Tokens::TAG_String
+      value = Types::String.new(token.value)
+    when Tokens::TAG_ByteArray
+      value = Types::ByteArray.new(token.value)
+    when Tokens::TAG_End
+      stack.pop
+      next
+    end
+
+    current = stack.last
+    case current
+    when Types::List
+      current << value
+    else
+      current[token.name] = value
+    end
+
+    case token
+    when Tokens::TAG_Compound, Tokens::TAG_List
+      stack.push value
+    end
+  end
+
+  root.first
+end
+
 module Types
   module Base
   end
 
-  class BaseInteger
+  class BaseScalar
     include Base
+    include Comparable
 
     attr_reader :value
 
+    def <=>(other)
+      if other.kind_of? BaseScalar
+        @value <=> other.value
+      else
+        @value <=> other
+      end
+    end
+  end
+
+  class BaseInteger < BaseScalar
     def self.make_subclass(n_bits)
       subclass = Class.new(self)
       limit = 1 << (n_bits - 1)
@@ -621,11 +676,7 @@ module Types
   Int = BaseInteger.make_subclass(32)
   Long = BaseInteger.make_subclass(64)
 
-  class FloatBase
-    include Base
-
-    attr_reader :value
-
+  class BaseFloat < BaseScalar
     def initialize(value)
       unless Numeric === value
         raise TypeError
@@ -635,7 +686,7 @@ module Types
     end
 
     def ==(other)
-      if Numeric === other or FloatBase === other
+      if Numeric === other or BaseFloat === other
         @value == other.to_f
       else
         false
@@ -653,17 +704,13 @@ module Types
     alias_method :to_f, :value
   end
 
-  class Float < FloatBase
+  class Float < BaseFloat
   end
 
-  class Double < FloatBase
+  class Double < BaseFloat
   end
 
-  class String
-    include Base
-
-    attr_reader :value
-
+  class String < BaseScalar
     def initialize(value)
       unless value.respond_to? :to_str
         raise TypeError, "String or string-like expected"
@@ -743,6 +790,10 @@ module Types
     def delete(key)
       @hash.delete key
       self
+    end
+
+    def to_hash
+      @hash.dup
     end
   end
 end
