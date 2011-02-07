@@ -14,14 +14,14 @@ describe NBTFile do
       input = StringIO.new(File.read(file))
       output = StringIO.new()
 
-      reader = NBTFile::Tokenizer.new(input)
-      writer = NBTFile::Emitter.new(output)
+      tokenizer = NBTFile::Tokenizer.new(input)
+      emitter = NBTFile::Emitter.new(output)
       begin
-        reader.each_token do |token|
-          writer.emit_token(token)
+        tokenizer.each_token do |token|
+          emitter.emit_token(token)
         end
       ensure
-        writer.finish
+        emitter.finish
       end
 
       input_bytes = unzip_string(input.string)
