@@ -9,28 +9,41 @@ describe NBTFile do
 
   sample_pattern = File.join(File.dirname(__FILE__), '..', 'samples', '*.nbt')
 
+  def perform_and_check_roundtrip(file)
+    input = StringIO.new(File.read(file))
+    output = StringIO.new()
+    yield input, output
+    input_bytes = unzip_string(input.string)
+    output_bytes = unzip_string(output.string)
+
+    input_digest = Digest::SHA1.hexdigest(input_bytes)
+    output_digest = Digest::SHA1.hexdigest(output_bytes)
+
+    output_digest.should == input_digest
+  end
+
   def self.check_file(file)
-    it "should roundtrip #{File.basename(file)}" do
-      input = StringIO.new(File.read(file))
-      output = StringIO.new()
+    basename = File.basename(file)
 
-      tokenizer = NBTFile::Tokenizer.new(input)
-      emitter = NBTFile::Emitter.new(output)
-      begin
-        tokenizer.each_token do |token|
-          emitter.emit_token(token)
+    it "should roundtrip #{basename} at the token level" do
+      perform_and_check_roundtrip(file) do |input, output|
+        tokenizer = NBTFile::Tokenizer.new(input)
+        emitter = NBTFile::Emitter.new(output)
+        begin
+          tokenizer.each_token do |token|
+            emitter.emit_token(token)
+          end
+        ensure
+          emitter.finish
         end
-      ensure
-        emitter.finish
       end
+    end
 
-      input_bytes = unzip_string(input.string)
-      output_bytes = unzip_string(output.string)
-
-      input_digest = Digest::SHA1.hexdigest(input_bytes)
-      output_digest = Digest::SHA1.hexdigest(output_bytes)
-
-      output_digest.should == input_digest
+    it "should roundtrip #{basename} at the data model level" do
+      perform_and_check_roundtrip(file) do |input, output|
+        name, body = NBTFile.read(input)
+        NBTFile.write(output, name, body)
+      end
     end
   end
 

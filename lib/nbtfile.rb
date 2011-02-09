@@ -24,6 +24,7 @@
 require 'zlib'
 require 'stringio'
 require 'yaml'
+require 'enumerator'
 
 class String
   begin
@@ -529,11 +530,11 @@ def self.tokenize(io)
 end
 
 def self.emit(io)
-  writer = Emitter.new(io)
+  emitter = Emitter.new(io)
   begin
-    yield writer
+    yield emitter
   ensure
-    writer.finish
+    emitter.finish
   end
 end
 
@@ -579,21 +580,52 @@ def self.read(io)
       value = Types::Byte.new(token.value)
     when Tokens::TAG_Short
       value = Types::Short.new(token.value)
+    when Tokens::TAG_Int
+      value = Types::Int.new(token.value)
     when Tokens::TAG_Long
       value = Types::Long.new(token.value)
     when Tokens::TAG_Float
       value = Types::Float.new(token.value)
+    when Tokens::TAG_Double
+      value = Types::Double.new(token.value)
     when Tokens::TAG_String
       value = Types::String.new(token.value)
-    when Tokens::TAG_ByteArray
+    when Tokens::TAG_Byte_Array
       value = Types::ByteArray.new(token.value)
     when Tokens::TAG_List
-      value = Types::List.new(token.value)
+      tag = token.value
+      case
+      when tag == Tokens::TAG_Byte
+        type = Types::Byte
+      when tag == Tokens::TAG_Short
+        type = Types::Short
+      when tag == Tokens::TAG_Int
+        type = Types::Int
+      when tag == Tokens::TAG_Long
+        type = Types::Long
+      when tag == Tokens::TAG_Float
+        type = Types::Float
+      when tag == Tokens::TAG_Double
+        type = Types::Double
+      when tag == Tokens::TAG_String
+        type = Types::String
+      when tag == Tokens::TAG_Byte_Array
+        type = Types::ByteArray
+      when tag == Tokens::TAG_List
+        type = Types::List
+      when tag == Tokens::TAG_Compound
+        type = Types::Compound
+      else
+        raise TypeError, "Unexpected list type #{token.value}"
+      end
+      value = Types::List.new(type)
     when Tokens::TAG_Compound
       value = Types::Compound.new
     when Tokens::TAG_End
       stack.pop
       next
+    else
+      raise TypeError, "Unexpected token type #{token.class}"
     end
 
     current = stack.last
@@ -611,6 +643,81 @@ def self.read(io)
   end
 
   root.first
+end
+
+class Writer
+  def initialize(emitter)
+    @emitter = emitter
+  end
+
+  def type_to_token(type)
+    case
+    when type == Types::Byte
+      token = Tokens::TAG_Byte
+    when type == Types::Short
+      token = Tokens::TAG_Short
+    when type == Types::Int
+      token = Tokens::TAG_Int
+    when type == Types::Long
+      token = Tokens::TAG_Long
+    when type == Types::Float
+      token = Tokens::TAG_Float
+    when type == Types::Double
+      token = Tokens::TAG_Double
+    when type == Types::String
+      token = Tokens::TAG_String
+    when type == Types::ByteArray
+      token = Tokens::TAG_Byte_Array
+    when type == Types::List
+      token = Tokens::TAG_List
+    when type == Types::Compound
+      token = Tokens::TAG_Compound
+    else
+      raise TypeError, "Unexpected list type #{type}"
+    end
+    return token
+  end
+
+  def write_pair(name, value)
+    case value
+    when Types::Byte
+      @emitter.emit_token(Tokens::TAG_Byte[name, value.value])
+    when Types::Short
+      @emitter.emit_token(Tokens::TAG_Short[name, value.value])
+    when Types::Int
+      @emitter.emit_token(Tokens::TAG_Int[name, value.value])
+    when Types::Long
+      @emitter.emit_token(Tokens::TAG_Long[name, value.value])
+    when Types::Float
+      @emitter.emit_token(Tokens::TAG_Float[name, value.value])
+    when Types::Double
+      @emitter.emit_token(Tokens::TAG_Double[name, value.value])
+    when Types::String
+      @emitter.emit_token(Tokens::TAG_String[name, value.value])
+    when Types::ByteArray
+      @emitter.emit_token(Tokens::TAG_Byte_Array[name, value.value])
+    when Types::List
+      token = type_to_token(value.type)
+      @emitter.emit_token(Tokens::TAG_List[name, token])
+      for item in value
+        write_pair(nil, item)
+      end
+      @emitter.emit_token(Tokens::TAG_End[nil, nil])
+    when Types::Compound
+      @emitter.emit_token(Tokens::TAG_Compound[name, nil])
+      for k, v in value
+        write_pair(k, v)
+      end
+      @emitter.emit_token(Tokens::TAG_End[nil, nil])
+    end
+  end
+end
+
+def self.write(io, name, body)
+  emit(io) do |emitter|
+    writer = Writer.new(emitter)
+    writer.write_pair(name, body)
+  end
 end
 
 module Types
@@ -718,9 +825,7 @@ module Types
       @value = value.to_str
     end
 
-    def to_s
-      @value.dup
-    end
+    def to_s ; @value.dup ; end
     alias_method :to_str, :to_s
   end
 
@@ -735,15 +840,27 @@ module Types
       end
       @value = value.to_str
     end
+
+    def ==(other)
+      self.class == other.class && @value == other.value
+    end
+
+    def to_s ; @value.dup ; end
+    alias_method :to_str, :to_s
   end
 
   class List
     include Base
     include Enumerable
 
-    def initialize(type)
+    attr_reader :type
+
+    def initialize(type, items=[])
       @type = type
       @items = []
+      for item in items
+        self << item
+      end
     end
 
     def <<(item)
@@ -763,22 +880,45 @@ module Types
       end
     end
 
+    def to_a
+      @items.dup
+    end
+
     def length
       @items.length
+    end
+    alias_method :size, :length
+
+    def ==(other)
+      self.class == other.class && @items == other.to_a
     end
   end
 
   class Compound
     include Base
+    include Enumerable
 
-    def initialize
+    def initialize(contents={})
       @hash = {}
+      @key_order = []
+      for key, value in contents
+        self[key] = value
+      end
     end
 
+    def has_key?(key)
+      @hash.has_key? key
+    end
+    alias_method :include?, :has_key?
+
     def []=(key, value)
-      unless Base === value
-        raise TypeError, "Values must be NBT types"
+      unless key.instance_of? ::String
+        raise TypeError, "Key must be a string"
       end
+      unless value.kind_of? Base
+        raise TypeError, "#{value.class} is not an NBT type"
+      end
+      @key_order << key unless @hash.has_key? key
       @hash[key] = value
       value
     end
@@ -788,12 +928,36 @@ module Types
     end
 
     def delete(key)
-      @hash.delete key
+      if @hash.has_key? key
+        @key_order.delete key
+        @hash.delete key
+      end
       self
+    end
+
+    def keys
+      @key_order.dup
+    end
+
+    def values
+      @key_order.map { |k| @hash[k] }
+    end
+
+    def each
+      if block_given?
+        @key_order.each { |k| yield k, @hash[k] }
+        self
+      else
+        Enumerable::Enumerator.new(self, :each)
+      end
     end
 
     def to_hash
       @hash.dup
+    end
+
+    def ==(other)
+      self.class == other.class && @hash == other.to_hash
     end
   end
 end
