@@ -26,7 +26,7 @@ require 'stringio'
 require 'yaml'
 require 'enumerator'
 
-class String
+class String #:nodoc: all
   begin
     alias_method :_nbtfile_getbyte, :getbyte
   rescue NameError
@@ -69,28 +69,57 @@ end
 
 module NBTFile
 
+# Raised when an invalid string encoding is encountered
 class EncodingError < RuntimeError
 end
 
+module Private #:nodoc: all
 TOKEN_CLASSES_BY_INDEX = []
 TOKEN_INDICES_BY_CLASS = {}
 
 BaseToken = Struct.new :name, :value
+end
 
+# Classes representing NBT tokens.  Each has a constructor with
+# two arguments, name and value, and corresponding accessors.
 module Tokens
   tag_names = %w(End Byte Short Int Long Float Double
                  Byte_Array String List Compound)
   tag_names.each_with_index do |tag_name, index|
     tag_name = "TAG_#{tag_name}"
-    token_class = Class.new(BaseToken)
+    token_class = Class.new(Private::BaseToken)
 
     const_set tag_name, token_class
 
-    TOKEN_CLASSES_BY_INDEX[index] = token_class 
-    TOKEN_INDICES_BY_CLASS[token_class] = index
+    Private::TOKEN_CLASSES_BY_INDEX[index] = token_class 
+    Private::TOKEN_INDICES_BY_CLASS[token_class] = index
+  end
+  class TAG_End
+  end
+  class TAG_Byte
+  end
+  class TAG_Short
+  end
+  class TAG_Int
+  end
+  class TAG_Long
+  end
+  class TAG_Float
+  end
+  class TAG_Double
+  end
+  class TAG_String
+  end
+  class TAG_Byte_Array
+  end
+  class TAG_List
+  end
+  class TAG_Compound
   end
 end
 
+
+module Private #:nodoc: all
 module CommonMethods
   def sign_bit(n_bytes)
     1 << ((n_bytes << 3) - 1)
@@ -474,19 +503,26 @@ class EndEmitterState
   end
 end
 
+end
+include Private
+
 class Emitter
+  include Private
   include Tokens
 
-  def initialize(stream)
+  def initialize(stream) #:nodoc:
     @gz = Zlib::GzipWriter.new(stream)
     @state = TopEmitterState.new()
   end
 
+  # Emit a token.  See the Tokens module for a list of token types.
   def emit_token(token)
     @state = @state.emit_token(@gz, token)
   end
 
-  def emit_compound(name)
+  # Emit a TAG_Compound token, call the block, and then emit a matching
+  # TAG_End token.
+  def emit_compound(name) #:yields:
     emit_token(TAG_Compound[name, nil])
     begin
       yield
@@ -495,7 +531,9 @@ class Emitter
     end
   end
 
-  def emit_list(name, type)
+  # Emit a TAG_List token, call the block, and then emit a matching TAG_End
+  # token.
+  def emit_list(name, type) #:yields:
     emit_token(TAG_List[name, type])
     begin
       yield
@@ -504,6 +542,8 @@ class Emitter
     end
   end
 
+  # Emits a list item, given a value (the token type is assumed based on
+  # the element type of the enclosing list).
   def emit_item(value)
     @state = @state.emit_item(@gz, value)
   end
@@ -513,6 +553,7 @@ class Emitter
   end
 end
 
+# Produce a sequence of NBT tokens from a stream
 def self.tokenize(io)
   case io
   when String
@@ -529,7 +570,8 @@ def self.tokenize(io)
   end
 end
 
-def self.emit(io)
+# Emit a NBT tokens to a stream
+def self.emit(io) #:yields: emitter
   emitter = Emitter.new(io)
   begin
     yield emitter
@@ -538,6 +580,8 @@ def self.emit(io)
   end
 end
 
+# Load an NBT file as a Ruby data structure; returns a pair containing
+# the name of the top-level compound tag and its value
 def self.load(io)
   root = {}
   stack = [root]
@@ -566,10 +610,13 @@ def self.load(io)
   root.first
 end
 
+# Utility helper which transcodes a stream directly to YAML
 def self.transcode_to_yaml(input, output)
   YAML.dump(load(input), output)
 end
 
+# Reads an NBT stream as a data structure and returns a pair containing the
+# name of the top-level compound tag and its value.
 def self.read(io)
   root = {}
   stack = [root]
@@ -645,6 +692,7 @@ def self.read(io)
   root.first
 end
 
+module Private #:nodoc: all
 class Writer
   def initialize(emitter)
     @emitter = emitter
@@ -712,6 +760,7 @@ class Writer
     end
   end
 end
+end
 
 def self.write(io, name, body)
   emit(io) do |emitter|
@@ -721,11 +770,12 @@ def self.write(io, name, body)
 end
 
 module Types
+  module Private #:nodoc: all
   module Base
   end
 
   class BaseScalar
-    include Base
+    include Private::Base
     include Comparable
 
     attr_reader :value
@@ -778,11 +828,6 @@ module Types
     alias_method :to_i, :value
   end
 
-  Byte = BaseInteger.make_subclass(8)
-  Short = BaseInteger.make_subclass(16)
-  Int = BaseInteger.make_subclass(32)
-  Long = BaseInteger.make_subclass(64)
-
   class BaseFloat < BaseScalar
     def initialize(value)
       unless Numeric === value
@@ -810,6 +855,21 @@ module Types
 
     alias_method :to_f, :value
   end
+  end
+  include Private
+
+  Byte = BaseInteger.make_subclass(8)
+  class Byte
+  end
+  Short = BaseInteger.make_subclass(16)
+  class Short
+  end
+  Int = BaseInteger.make_subclass(32)
+  class Int
+  end
+  Long = BaseInteger.make_subclass(64)
+  class Long
+  end
 
   class Float < BaseFloat
   end
@@ -830,7 +890,7 @@ module Types
   end
 
   class ByteArray
-    include Base
+    include Private::Base
 
     attr_reader :value
 
@@ -850,7 +910,7 @@ module Types
   end
 
   class List
-    include Base
+    include Private::Base
     include Enumerable
 
     attr_reader :type
@@ -895,7 +955,7 @@ module Types
   end
 
   class Compound
-    include Base
+    include Private::Base
     include Enumerable
 
     def initialize(contents={})
@@ -915,7 +975,7 @@ module Types
       unless key.instance_of? ::String
         raise TypeError, "Key must be a string"
       end
-      unless value.kind_of? Base
+      unless value.kind_of? Private::Base
         raise TypeError, "#{value.class} is not an NBT type"
       end
       @key_order << key unless @hash.has_key? key
