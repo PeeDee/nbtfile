@@ -548,7 +548,7 @@ class Emitter
     @state = @state.emit_item(@gz, value)
   end
 
-  def finish
+  def finish #:nodoc:
     @gz.close
   end
 end
