@@ -175,8 +175,6 @@ There are also two "complex" types which reflect NBT lists and compound structur
 
 === NBTFile.transcode_to_yaml
 
-=== NBTFile.transcode_to_json
-
 == Note on Patches/Pull Requests
  
 * Fork the project.
