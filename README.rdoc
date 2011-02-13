@@ -20,7 +20,7 @@ The NBT data model has ten different data types:
 * 32-bit floating-point numbers (Tag_Float)
 * 64-bit floating-point numbers (Tag_Double)
 * UTF-8 strings (Tag_String)
-* raw byte strings (Tag_Byte_Array)
+* raw byte sequences (Tag_Byte_Array)
 * homogenous lists (Tag_List)
 * compound structures (Tag_Compound)
 
@@ -43,6 +43,66 @@ Tag_End, but this is not supported in practice.
 
 The top level of an NBT file must be a single-element
 compound structure.
+
+== Interface
+
+== Low-level API
+
+The low-level API deals directly in NBT tokens, which are represented by eleven types:
+
+* NBTFile::Tokens::TAG_End
+* NBTFile::Tokens::TAG_Byte
+* NBTFile::Tokens::TAG_Short
+* NBTFile::Tokens::TAG_Long
+* NBTFile::Tokens::TAG_Float
+* NBTFile::Tokens::TAG_Double
+* NBTFile::Tokens::TAG_Byte_Array
+* NBTFile::Tokens::TAG_String
+* NBTFile::Tokens::TAG_List
+* NBTFile::Tokens::TAG_Compound
+
+Their constructors each take two arguments: <code>name</code> and <code>value</code>,
+which are also exposed by similarly-named accessors.  Most of these tokens represent
+simple values, but TAG_List and TAG_Compound introduce the beginning of a list and a
+compound structure, and TAG_End terminates either one.
+
+The <code>name</code> field supplies the field name when the token is part of a compound
+structure, and is ignored when it is part of a list.
+
+For most token types, <code>value</code> represents the value of the token.  For TAG_List
+it represents the type of the list.  It is ignored for compound structures.
+
+=== NBTFile.tokenize
+
+=== NBTFile.emit
+
+== High-level API
+
+Much of the high-level API deals in higher-level data types from the NBTFile::Types module.
+
+There are eight "primitive" types with <code>value</code> fields which reflect their native Ruby values:
+
+* NBTFile::Types::Byte
+* NBTFile::Types::Short
+* NBTFile::Types::Int
+* NBTFile::Types::Long
+* NBTFile::Types::Float
+* NBTFile::Types::Double
+* NBTFile::Types::ByteArray
+* NBTFile::Types::String
+
+There are also two "complex" types which reflect NBT lists and compound structures:
+
+* NBTFile::Types::List - an Array-like class corresponding to an NBT list
+* NBTFile::Types::Compound - a Hash-like class correspodning to an NBT compound structure
+
+=== NBTFile.read
+
+=== NBTFile.write
+
+=== NBTFile.load
+
+=== NBTFile.transcode_to_yaml
 
 == Syntax
 
@@ -114,66 +174,6 @@ ABNF (see RFC 5234).
  TAG-STRING = %x08
  TAG-LIST = %x09
  TAG-COMPOUND = %x0a
-
-== Interface
-
-== Low-level API
-
-The low-level API deals directly in NBT tokens, which are represented by eleven types:
-
-* NBTFile::Tokens::TAG_End
-* NBTFile::Tokens::TAG_Byte
-* NBTFile::Tokens::TAG_Short
-* NBTFile::Tokens::TAG_Long
-* NBTFile::Tokens::TAG_Float
-* NBTFile::Tokens::TAG_Double
-* NBTFile::Tokens::TAG_Byte_Array
-* NBTFile::Tokens::TAG_String
-* NBTFile::Tokens::TAG_List
-* NBTFile::Tokens::TAG_Compound
-
-Their constructors each take two arguments: <code>name</code> and <code>value</code>,
-which are also exposed by similarly-named accessors.  Most of these tokens represent
-simple values, but TAG_List and TAG_Compound introduce the beginning of a list and a
-compound structure, and TAG_End terminates either one.
-
-The <code>name</code> field supplies the field name when the token is part of a compound
-structure, and is ignored when it is part of a list.
-
-For most token types, <code>value</code> represents the value of the token.  For TAG_List
-it represents the type of the list.  It is ignored for compound structures.
-
-=== NBTFile.tokenize
-
-=== NBTFile.emit
-
-== High-level API
-
-Much of the high-level API deals in higher-level data types from the NBTFile::Types module.
-
-There are eight "primitive" types with <code>value</code> fields which reflect their native Ruby values:
-
-* NBTFile::Types::Byte
-* NBTFile::Types::Short
-* NBTFile::Types::Int
-* NBTFile::Types::Long
-* NBTFile::Types::Float
-* NBTFile::Types::Double
-* NBTFile::Types::ByteArray
-* NBTFile::Types::String
-
-There are also two "complex" types which reflect NBT lists and compound structures:
-
-* NBTFile::Types::List - an Array-like class corresponding to an NBT list
-* NBTFile::Types::Compound - a Hash-like class correspodning to an NBT compound structure
-
-=== NBTFile.read
-
-=== NBTFile.write
-
-=== NBTFile.load
-
-=== NBTFile.transcode_to_yaml
 
 == Note on Patches/Pull Requests
  

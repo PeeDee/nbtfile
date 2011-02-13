@@ -24,7 +24,6 @@
 require 'zlib'
 require 'stringio'
 require 'yaml'
-require 'enumerator'
 
 class String #:nodoc: all
   begin
@@ -1008,7 +1007,7 @@ module Types
         @key_order.each { |k| yield k, @hash[k] }
         self
       else
-        Enumerable::Enumerator.new(self, :each)
+        @key_order.each
       end
     end
 
