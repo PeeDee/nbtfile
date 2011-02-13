@@ -189,4 +189,4 @@ There are also two "complex" types which reflect NBT lists and compound structur
 
 == Copyright
 
-Copyright (c) 2010 MenTaLguY. See LICENSE for details.
+Copyright (c) 2010-2011 MenTaLguY. See LICENSE for details.
