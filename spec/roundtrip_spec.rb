@@ -27,14 +27,10 @@ describe NBTFile do
 
     it "should roundtrip #{basename} at the token level" do
       perform_and_check_roundtrip(file) do |input, output|
-        tokenizer = NBTFile::Tokenizer.new(input)
-        emitter = NBTFile::Emitter.new(output)
-        begin
-          tokenizer.each_token do |token|
+        NBTFile.emit(output) do |emitter|
+          NBTFile.tokenize(input) do |token|
             emitter.emit_token(token)
           end
-        ensure
-          emitter.finish
         end
       end
     end

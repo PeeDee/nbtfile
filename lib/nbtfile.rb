@@ -73,6 +73,8 @@ class EncodingError < RuntimeError
 end
 
 module Private #:nodoc: all
+extend self
+
 TOKEN_CLASSES_BY_INDEX = []
 TOKEN_INDICES_BY_CLASS = {}
 
@@ -300,7 +302,7 @@ end
 
 class Tokenizer
   def initialize(io)
-    @gz = Zlib::GzipReader.new(io)
+    @io = io
     @state = TopTokenizerState.new()
   end
 
@@ -311,7 +313,7 @@ class Tokenizer
   end
 
   def get_token
-    @state, token = @state.get_token(@gz)
+    @state, token = @state.get_token(@io)
     token
   end
 end
@@ -552,24 +554,41 @@ class Emitter
   end
 end
 
-# Produce a sequence of NBT tokens from a stream
-def self.tokenize(io)
-  case io
-  when String
-    io = StringIO.new(io, "rb")
-  end
-  reader = Tokenizer.new(io)
+module Internal #:nodoc: all
+  extend self
 
-  if block_given?
-    reader.each_token { |token| yield token }
-  else
-    tokens = []
-    reader.each_token { |token| tokens << token }
-    tokens
+  def coerce_to_io(io)
+    case io
+    when String
+      StringIO.new(io, "rb")
+    else
+      io
+    end
+  end
+
+  def tokenize(io)
+    reader = NBTFile::Tokenizer.new(io)
+
+    if block_given?
+      reader.each_token { |token| yield token }
+    else
+      tokens = []
+      reader.each_token { |token| tokens << token }
+      tokens
+    end
   end
 end
 
-# Emit a NBT tokens to a stream
+# Produce a sequence of NBT tokens from a stream
+def self.tokenize(io, &block)
+  Internal.tokenize(Zlib::GzipReader.new(Internal.coerce_to_io(io)), &block)
+end
+
+def self.tokenize_uncompressed(io, &block)
+  Internal.tokenize(Internal.coerce_to_io(io), &block)
+end
+
+# Emit NBT tokens to a stream
 def self.emit(io) #:yields: emitter
   emitter = Emitter.new(io)
   begin

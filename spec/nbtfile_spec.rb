@@ -201,6 +201,19 @@ describe "NBTFile::tokenize" do
   end
 end
 
+describe "NBTFile::tokenize_uncompressed" do
+  it_should_behave_like "readers and writers"
+
+  def check_reader_or_writer(input, tokens, tree)
+    io = StringIO.new(input, "rb")
+    actual_tokens = []
+    NBTFile.tokenize_uncompressed(io) do |token|
+      actual_tokens << token
+    end
+    actual_tokens.should == tokens
+  end
+end
+
 describe "NBTFile::tokenize without a block" do
   include ZlibHelpers
 
@@ -209,6 +222,19 @@ describe "NBTFile::tokenize without a block" do
   def check_reader_or_writer(input, tokens, tree)
     io = make_zipped_stream(input)
     actual_tokens = NBTFile.tokenize(io)
+    actual_tokens.should be_a_kind_of(Enumerable)
+    actual_tokens.to_a.should == tokens
+  end
+end
+
+describe "NBTFile::tokenize_uncompressed without a block" do
+  include ZlibHelpers
+
+  it_should_behave_like "readers and writers"
+
+  def check_reader_or_writer(input, tokens, tree)
+    io = StringIO.new(input)
+    actual_tokens = NBTFile.tokenize_uncompressed(io)
     actual_tokens.should be_a_kind_of(Enumerable)
     actual_tokens.to_a.should == tokens
   end
