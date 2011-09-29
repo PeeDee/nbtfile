@@ -511,14 +511,14 @@ class Emitter
   include Private
   include Tokens
 
-  def initialize(stream) #:nodoc:
-    @gz = Zlib::GzipWriter.new(stream)
+  def initialize(io) #:nodoc:
+    @io = io
     @state = TopEmitterState.new()
   end
 
   # Emit a token.  See the Tokens module for a list of token types.
   def emit_token(token)
-    @state = @state.emit_token(@gz, token)
+    @state = @state.emit_token(@io, token)
   end
 
   # Emit a TAG_Compound token, call the block, and then emit a matching
@@ -546,11 +546,7 @@ class Emitter
   # Emits a list item, given a value (the token type is assumed based on
   # the element type of the enclosing list).
   def emit_item(value)
-    @state = @state.emit_item(@gz, value)
-  end
-
-  def finish #:nodoc:
-    @gz.close
+    @state = @state.emit_item(@io, value)
   end
 end
 
@@ -590,11 +586,12 @@ end
 
 # Emit NBT tokens to a stream
 def self.emit(io) #:yields: emitter
-  emitter = Emitter.new(io)
+  gz = Zlib::GzipWriter.new(io)
   begin
+    emitter = Emitter.new(gz)
     yield emitter
   ensure
-    emitter.finish
+    gz.close
   end
 end
 
