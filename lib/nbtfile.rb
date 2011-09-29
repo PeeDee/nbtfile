@@ -550,9 +550,7 @@ class Emitter
   end
 end
 
-module Internal #:nodoc: all
-  extend self
-
+module Private #:nodoc: all
   def coerce_to_io(io)
     case io
     when String
@@ -561,38 +559,38 @@ module Internal #:nodoc: all
       io
     end
   end
-
-  def tokenize(io)
-    reader = NBTFile::Tokenizer.new(io)
-
-    if block_given?
-      reader.each_token { |token| yield token }
-    else
-      tokens = []
-      reader.each_token { |token| tokens << token }
-      tokens
-    end
-  end
 end
 
 # Produce a sequence of NBT tokens from a stream
-def self.tokenize(io, &block)
-  Internal.tokenize(Zlib::GzipReader.new(Internal.coerce_to_io(io)), &block)
+def self.tokenize(io, &block) #:yields: token
+  gz = Zlib::GzipReader.new(Private.coerce_to_io(io))
+  tokenize_uncompressed(gz, &block)
 end
 
-def self.tokenize_uncompressed(io, &block)
-  Internal.tokenize(Internal.coerce_to_io(io), &block)
+def self.tokenize_uncompressed(io) #:yields: token
+  reader = NBTFile::Tokenizer.new(Private.coerce_to_io(io))
+  if block_given?
+    reader.each_token { |token| yield token }
+  else
+    tokens = []
+    reader.each_token { |token| tokens << token }
+    tokens
+  end
 end
 
 # Emit NBT tokens to a stream
-def self.emit(io) #:yields: emitter
+def self.emit(io, &block) #:yields: emitter
   gz = Zlib::GzipWriter.new(io)
   begin
-    emitter = Emitter.new(gz)
-    yield emitter
+    emit_uncompressed(gz, &block)
   ensure
     gz.close
   end
+end
+
+def self.emit_uncompressed(io) #:yields: emitter
+  emitter = Emitter.new(io)
+  yield emitter
 end
 
 # Load an NBT file as a Ruby data structure; returns a pair containing

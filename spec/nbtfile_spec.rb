@@ -240,6 +240,20 @@ describe "NBTFile::tokenize_uncompressed without a block" do
   end
 end
 
+describe "NBTFile::emit_uncompressed" do
+  it_should_behave_like "readers and writers"
+
+  def check_reader_or_writer(output, tokens, tree)
+    io = StringIO.new()
+    NBTFile.emit_uncompressed(io) do |writer|
+      for token in tokens
+        writer.emit_token(token)
+      end
+    end
+    io.string.should == output
+  end
+end
+
 describe "NBTFile::emit" do
   include ZlibHelpers
 
