@@ -301,6 +301,8 @@ class EndTokenizerState
 end
 
 class Tokenizer
+  include Enumerable
+
   def initialize(io)
     @io = io
     @state = TopTokenizerState.new()
@@ -316,6 +318,8 @@ class Tokenizer
     @state, token = @state.get_token(@io)
     token
   end
+
+  alias each each_token
 end
 
 module EmitMethods
@@ -572,9 +576,7 @@ def self.tokenize_uncompressed(io) #:yields: token
   if block_given?
     reader.each_token { |token| yield token }
   else
-    tokens = []
-    reader.each_token { |token| tokens << token }
-    tokens
+    reader
   end
 end
 
