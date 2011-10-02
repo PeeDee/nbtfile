@@ -30,143 +30,9 @@ require 'nbtfile/exceptions'
 require 'nbtfile/tokens'
 require 'nbtfile/io'
 require 'nbtfile/tokenizer'
+require 'nbtfile/emitter'
 
 module NBTFile
-
-module Private #:nodoc: all
-
-class TopEmitterState
-  include EmitMethods
-  include Tokens
-
-  def emit_token(io, token)
-    case token
-    when TAG_Compound
-      emit_type(io, token.class)
-      emit_string(io, token.name)
-      end_state = EndEmitterState.new()
-      next_state = CompoundEmitterState.new(end_state, nil)
-      next_state
-    end
-  end
-end
-
-class CompoundEmitterState
-  include EmitMethods
-  include Tokens
-
-  def initialize(cont, capturing)
-    @cont = cont
-    @capturing = capturing
-  end
-
-  def emit_token(io, token)
-    out = @capturing || io
-
-    type = token.class
-
-    emit_type(out, type)
-    emit_string(out, token.name) unless type == TAG_End
-
-    emit_value(out, type, token.value, @capturing, self, @cont)
-  end
-
-  def emit_item(io, value)
-    raise RuntimeError, "not in a list"
-  end
-end
-
-class ListEmitterState
-  include EmitMethods
-  include Tokens
-
-  def initialize(cont, type, capturing)
-    @cont = cont
-    @type = type
-    @count = 0
-    @value = StringIO.new()
-    @capturing = capturing
-  end
-
-  def emit_token(io, token)
-    type = token.class
-
-    if type == TAG_End
-      out = @capturing || io
-      emit_list_header(out, @type, @count)
-      out.write(@value.string)
-    elsif type != @type
-      raise RuntimeError, "unexpected token #{token.class}, expected #{@type}"
-    end
-
-    _emit_item(io, type, token.value)
-  end
-
-  def emit_item(io, value)
-    _emit_item(io, @type, value)
-  end
-
-  def _emit_item(io, type, value)
-    @count += 1
-    emit_value(@value, type, value, @value, self, @cont)
-  end
-end
-
-class EndEmitterState
-  def emit_token(io, token)
-    raise RuntimeError, "unexpected token #{token.class} after end"
-  end
-
-  def emit_item(io, value)
-    raise RuntimeError, "not in a list"
-  end
-end
-
-end
-include Private
-
-class Emitter
-  include Private
-  include Tokens
-
-  def initialize(io) #:nodoc:
-    @io = io
-    @state = TopEmitterState.new()
-  end
-
-  # Emit a token.  See the Tokens module for a list of token types.
-  def emit_token(token)
-    @state = @state.emit_token(@io, token)
-  end
-
-  # Emit a TAG_Compound token, call the block, and then emit a matching
-  # TAG_End token.
-  def emit_compound(name) #:yields:
-    emit_token(TAG_Compound[name, nil])
-    begin
-      yield
-    ensure
-      emit_token(TAG_End[nil, nil])
-    end
-  end
-
-  # Emit a TAG_List token, call the block, and then emit a matching TAG_End
-  # token.
-  def emit_list(name, type) #:yields:
-    emit_token(TAG_List[name, type])
-    begin
-      yield
-    ensure
-      emit_token(TAG_End[nil, nil])
-    end
-  end
-
-  # Emits a list item, given a value (the token type is assumed based on
-  # the element type of the enclosing list).
-  def emit_item(value)
-    @state = @state.emit_item(@io, value)
-  end
-end
 
 # Produce a sequence of NBT tokens from a stream
 def self.tokenize(io, &block) #:yields: token
@@ -175,7 +41,7 @@ def self.tokenize(io, &block) #:yields: token
 end
 
 def self.tokenize_uncompressed(io) #:yields: token
-  reader = NBTFile::Private::Tokenizer.new(Private.coerce_to_io(io))
+  reader = Tokenizer.new(Private.coerce_to_io(io))
   if block_given?
     reader.each_token { |token| yield token }
   else
@@ -310,8 +176,10 @@ def self.read(io)
   root.first
 end
 
-module Private #:nodoc: all
+module Private #:nodoc:
 class Writer
+  include Private
+
   def initialize(emitter)
     @emitter = emitter
   end
@@ -382,7 +250,7 @@ end
 
 def self.write(io, name, body)
   emit(io) do |emitter|
-    writer = Writer.new(emitter)
+    writer = Private::Writer.new(emitter)
     writer.write_pair(name, body)
   end
 end
