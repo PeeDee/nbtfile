@@ -23,12 +23,39 @@
 
 module NBTFile
 
+module Private #:nodoc:
+  REGION_WIDTH_IN_CHUNKS = 32
+
+  def self.chunk_to_offset(x, z)
+    x * REGION_WIDTH_IN_CHUNKS + z
+  end
+end
+
 class RegionFile
   def initialize(filename)
+    @filename = filename
+    @chunks = {}
   end
 
   def get_chunk(x, z)
-    nil
+    @chunks[Private.chunk_to_offset(x, z)]
+  end
+
+  def store_chunk(x, z, content, timestamp)
+    @chunks[Private.chunk_to_offset(x, z)] = [content.dup, timestamp]
+    File.open(@filename, "w+b") {}
+    self
+  end
+
+  def delete_chunk(x, z)
+    @chunks.delete Private.chunk_to_offset(x, z)
+    if @chunks.empty?
+      begin
+        File.unlink(@filename)
+      rescue Errno::ENOENT
+      end
+    end
+    self
   end
 end
 
