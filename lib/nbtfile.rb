@@ -1,6 +1,6 @@
 # nbtfile
 #
-# Copyright (c) 2010 MenTaLguY
+# Copyright (c) 2010-2011 MenTaLguY
 # 
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
@@ -25,46 +25,7 @@ require 'zlib'
 require 'stringio'
 require 'yaml'
 
-class String #:nodoc: all
-  begin
-    alias_method :_nbtfile_getbyte, :getbyte
-  rescue NameError
-    alias_method :_nbtfile_getbyte, :[]
-  end
-
-  begin
-    alias_method :_nbtfile_force_encoding, :force_encoding
-  rescue NameError
-    def _nbtfile_force_encoding(encoding) ; end
-  end
-
-  begin
-    alias_method :_nbtfile_encode, :encode
-  rescue NameError
-    def _nbtfile_encode(encoding) ; dup ; end
-  end
-
-  begin
-    alias_method :_nbtfile_bytesize, :bytesize
-  rescue NameError
-    alias_method :_nbtfile_bytesize, :size
-  end
-
-  begin
-    alias_method :_nbtfile_valid_encoding?, :valid_encoding?
-  rescue NameError
-    require 'iconv'
-
-    def _nbtfile_valid_encoding?
-      begin
-        Iconv.conv("UTF-8", "UTF-8", self)
-        true
-      rescue Iconv::IllegalSequence
-        false
-      end
-    end
-  end
-end
+require 'nbtfile/string'
 
 module NBTFile
 
