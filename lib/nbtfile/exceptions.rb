@@ -1,4 +1,4 @@
-# nbtfile
+# nbtfile/exceptions
 #
 # Copyright (c) 2010-2011 MenTaLguY
 # 

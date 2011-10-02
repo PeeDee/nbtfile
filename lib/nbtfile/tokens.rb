@@ -1,4 +1,4 @@
-# nbtfile
+# nbtfile/tokens
 #
 # Copyright (c) 2010-2011 MenTaLguY
 # 
