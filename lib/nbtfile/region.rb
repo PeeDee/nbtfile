@@ -95,7 +95,8 @@ class RegionFile
         payload_length, payload = raw_data.unpack("Na*")
         case
         when payload.length < payload_length
-          raise RuntimeError, "Chunk length #{payload_length} greater than allocated length #{payload.length}"
+          raise RuntimeError, "Chunk length #{payload_length} greater than "
+                              "allocated length #{payload.length}"
         when payload.length > payload_length
           payload = payload[0, payload_length]
         end
@@ -122,7 +123,7 @@ class RegionFile
       length = Private.length_in_sectors(payload.length)
       address = @high_water_mark
       @high_water_mark += length
-      Private.write_sectors(stream, address, compressed_data)
+      Private.write_sectors(stream, address, payload)
       Private.write_offset_table_entry(stream, x, z, address, length)
       Private.update_chunk_timestamp(stream, x, z)
     end
