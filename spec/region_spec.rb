@@ -28,23 +28,20 @@ describe NBTFile::RegionFile do
 
   it "stores data in chunks" do
     content = "foobar"
-    timestamp = 0
-    @region_file.store_chunk(0, 0, content, timestamp)
-    @region_file.get_chunk(0, 0).should == [content, timestamp]
+    @region_file.store_chunk(0, 0, content)
+    @region_file.get_chunk(0, 0).should == content
   end
 
   it "creates the file after a chunk has been stored" do
     content = "foobar"
-    timestamp = 0
-    @region_file.store_chunk(0, 0, content, timestamp)
+    @region_file.store_chunk(0, 0, content)
     File.exists?(@region_filename).should be_true
   end
 
   it "removes the file only after the last chunk is deleted" do
     content = "foobar"
-    timestamp = 0
-    @region_file.store_chunk(0, 0, content, timestamp)
-    @region_file.store_chunk(1, 0, content, timestamp)
+    @region_file.store_chunk(0, 0, content)
+    @region_file.store_chunk(1, 0, content)
     @region_file.delete_chunk(0, 0)
     File.exists?(@region_filename).should be_true
     @region_file.delete_chunk(1, 0)

@@ -41,8 +41,8 @@ class RegionFile
     @chunks[Private.chunk_to_offset(x, z)]
   end
 
-  def store_chunk(x, z, content, timestamp)
-    @chunks[Private.chunk_to_offset(x, z)] = [content.dup, timestamp]
+  def store_chunk(x, z, content)
+    @chunks[Private.chunk_to_offset(x, z)] = content.dup
     File.open(@filename, "w+b") {}
     self
   end
