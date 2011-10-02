@@ -29,97 +29,11 @@ require 'nbtfile/string'
 require 'nbtfile/exceptions'
 require 'nbtfile/tokens'
 require 'nbtfile/io'
+require 'nbtfile/tokenizer'
 
 module NBTFile
 
 module Private #:nodoc: all
-class TopTokenizerState
-  include ReadMethods
-  include Tokens
-
-  def get_token(io)
-    type = read_type(io)
-    raise RuntimeError, "expected TAG_Compound" unless type == TAG_Compound
-    name = read_string(io)
-    end_state = EndTokenizerState.new()
-    next_state = CompoundTokenizerState.new(end_state)
-    [next_state, type[name, nil]]
-  end
-end
-
-class CompoundTokenizerState
-  include ReadMethods
-  include Tokens
-
-  def initialize(cont)
-    @cont = cont
-  end
-
-  def get_token(io)
-    type = read_type(io)
-
-    if type != TAG_End
-      name = read_string(io)
-    else
-      name = ""
-    end
-
-    read_value(io, type, name, self, @cont)
-  end
-end
-
-class ListTokenizerState
-  include ReadMethods
-  include Tokens
-
-  def initialize(cont, type, length)
-    @cont = cont
-    @length = length
-    @offset = 0
-    @type = type
-  end
-
-  def get_token(io)
-    if @offset < @length
-      type = @type
-    else
-      type = TAG_End
-    end
-
-    index = @offset
-    @offset += 1
-
-    read_value(io, type, index, self, @cont)
-  end
-end
-
-class EndTokenizerState
-  def get_token(io)
-    [self, nil]
-  end
-end
-
-class Tokenizer
-  include Enumerable
-
-  def initialize(io)
-    @io = io
-    @state = TopTokenizerState.new()
-  end
-
-  def each_token
-    while token = get_token()
-      yield token
-    end
-  end
-
-  def get_token
-    @state, token = @state.get_token(@io)
-    token
-  end
-
-  alias each each_token
-end
 
 class TopEmitterState
   include EmitMethods
@@ -254,17 +168,6 @@ class Emitter
   end
 end
 
-module Private #:nodoc: all
-  def coerce_to_io(io)
-    case io
-    when String
-      StringIO.new(io, "rb")
-    else
-      io
-    end
-  end
-end
-
 # Produce a sequence of NBT tokens from a stream
 def self.tokenize(io, &block) #:yields: token
   gz = Zlib::GzipReader.new(Private.coerce_to_io(io))
@@ -272,7 +175,7 @@ def self.tokenize(io, &block) #:yields: token
 end
 
 def self.tokenize_uncompressed(io) #:yields: token
-  reader = NBTFile::Tokenizer.new(Private.coerce_to_io(io))
+  reader = NBTFile::Private::Tokenizer.new(Private.coerce_to_io(io))
   if block_given?
     reader.each_token { |token| yield token }
   else
