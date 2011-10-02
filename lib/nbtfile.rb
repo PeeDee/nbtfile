@@ -26,12 +26,9 @@ require 'stringio'
 require 'yaml'
 
 require 'nbtfile/string'
+require 'nbtfile/exceptions'
 
 module NBTFile
-
-# Raised when an invalid string encoding is encountered
-class EncodingError < RuntimeError
-end
 
 module Private #:nodoc: all
 extend self
