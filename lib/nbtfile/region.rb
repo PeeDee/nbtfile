@@ -44,12 +44,17 @@ class RegionFile
       (length + (SECTOR_SIZE - 1)) / SECTOR_SIZE
     end
 
-    def chunk_to_table_offset(x, z)
+    def chunk_to_file_offset(x, z)
       TABLE_ENTRY_SIZE * (x * REGION_WIDTH_IN_CHUNKS + z)
     end
 
+    def table_index_to_chunk(index)
+      [index / REGION_WIDTH_IN_CHUNKS,
+       index % REGION_WIDTH_IN_CHUNKS]
+    end
+
     def read_alloc_table_entry(io, x, z)
-      io.seek(chunk_to_table_offset(x, z))
+      io.seek(chunk_to_file_offset(x, z))
       (info,) = io.read(TABLE_ENTRY_SIZE).unpack("N")
       return nil unless info
       address = (info >> 8)
@@ -64,13 +69,13 @@ class RegionFile
     end
 
     def write_offset_table_entry(io, x, z, address, length)
-      io.seek(chunk_to_table_offset(x, z))
+      io.seek(chunk_to_file_offset(x, z))
       info = (address << 8 | length)
       io.write([info].pack("N"))
     end
 
     def update_chunk_timestamp(io, x, z)
-      io.seek(TIMESTAMP_TABLE_OFFSET + chunk_to_table_offset(x, z))
+      io.seek(TIMESTAMP_TABLE_OFFSET + chunk_to_file_offset(x, z))
       io.write([Time.now.to_i].pack("N"))
     end
 
@@ -84,6 +89,19 @@ class RegionFile
     @filename = filename
     @high_water_mark = Private::DATA_START_SECTOR
     @live_chunks = Set.new
+    begin
+      File.open(@filename, 'rb') do |stream|
+        table = stream.read(Private::TABLE_SIZE)
+        infos = table.unpack("N*")
+        infos.each_with_index do |info, index|
+          if info.nonzero?
+            x, z = Private.table_index_to_chunk(index)
+            @live_chunks.add [x, z]
+          end
+        end
+      end
+    rescue Errno::ENOENT
+    end
   end
 
   def get_chunk(x, z)

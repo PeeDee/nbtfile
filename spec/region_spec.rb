@@ -47,4 +47,22 @@ describe NBTFile::RegionFile do
     @region_file.delete_chunk(1, 0)
     File.exists?(@region_filename).should be_false
   end
+
+  it "persists data in the file" do
+    content = "foobar"
+    @region_file.store_chunk(0, 0, content)
+    region_file2 = NBTFile::RegionFile.new(@region_filename)
+    region_file2.get_chunk(0, 0).should == content
+  end
+
+  it "recognizes the number of chunks stored" do
+    content = "foobar"
+    @region_file.store_chunk(0, 0, content)
+    region_file2 = NBTFile::RegionFile.new(@region_filename)
+    region_file2.store_chunk(1, 0, content)
+    region_file2.delete_chunk(1, 0)
+    File.exists?(@region_filename).should be_true
+    region_file2.delete_chunk(0, 0)
+    File.exists?(@region_filename).should be_false
+  end
 end
