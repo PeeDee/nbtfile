@@ -179,7 +179,7 @@ class RegionManager
     @region_dir = region_dir
   end
 
-  def get_region_file(x, z)
+  def get_region(x, z)
     r_x = x.to_i / REGION_WIDTH_IN_CHUNKS
     r_z = z.to_i / REGION_WIDTH_IN_CHUNKS
     filename = "r.#{r_x}.#{r_z}.mcr"
@@ -187,7 +187,7 @@ class RegionManager
   end
 
   def store_chunk(x, z, content)
-    region_file = get_region_file(x, z)
+    region_file = get_region(x, z)
     region_file.store_chunk(x % REGION_WIDTH_IN_CHUNKS,
                             z % REGION_WIDTH_IN_CHUNKS,
                             content)
@@ -195,9 +195,16 @@ class RegionManager
   end
 
   def get_chunk(x, z)
-    region_file = get_region_file(x, z)
+    region_file = get_region(x, z)
     region_file.get_chunk(x % REGION_WIDTH_IN_CHUNKS,
                           z % REGION_WIDTH_IN_CHUNKS)
+  end
+
+  def delete_chunk(x, z)
+    region_file = get_region(x, z)
+    region_file.delete_chunk(x % REGION_WIDTH_IN_CHUNKS,
+                             z % REGION_WIDTH_IN_CHUNKS)
+    self
   end
 end
 

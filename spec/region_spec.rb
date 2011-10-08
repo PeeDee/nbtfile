@@ -103,4 +103,12 @@ describe NBTFile::RegionManager do
     File.exists?(File.join(@temp_dir, 'r.-1.2.mcr')).should be_true
     File.exists?(File.join(@temp_dir, 'r.-2.2.mcr')).should be_false
   end
+
+  it "deletes chunks (idempotently)" do
+    content = "foobar"
+    @region_manager.store_chunk(0, 0, content)
+    @region_manager.delete_chunk(0, 0)
+    File.exists?(File.join(@temp_dir, 'r.0.0.mcr')).should be_false
+    @region_manager.delete_chunk(0, 0)
+  end
 end
