@@ -65,4 +65,12 @@ describe NBTFile::RegionFile do
     region_file2.delete_chunk(0, 0)
     File.exists?(@region_filename).should be_false
   end
+
+  it "can enumerate stored chunks" do
+    content = "foobar"
+    @region_file.store_chunk(0, 0, content)
+    @region_file.store_chunk(1, 0, content)
+    @region_file.store_chunk(0, 2, content)
+    Set.new(@region_file.chunks).should == Set[[0, 0], [1, 0], [0, 2]]
+  end
 end

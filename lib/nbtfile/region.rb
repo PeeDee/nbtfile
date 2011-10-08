@@ -104,6 +104,10 @@ class RegionFile
     end
   end
 
+  def chunks
+    @live_chunks.dup
+  end
+
   def get_chunk(x, z)
     begin
       File.open(@filename, "rb") do |stream|
