@@ -92,9 +92,15 @@ describe NBTFile::RegionManager do
     @region_manager.get_chunk(0, 0).should == content
   end
 
-  it "creates a region file" do
+  it "creates appropriate region files" do
     content = "foobar"
     @region_manager.store_chunk(0, 0, content)
     File.exists?(File.join(@temp_dir, 'r.0.0.mcr')).should be_true
+    @region_manager.store_chunk(32, 32, content)
+    File.exists?(File.join(@temp_dir, 'r.1.1.mcr')).should be_true
+    @region_manager.store_chunk(-16, 64, content)
+    @region_manager.store_chunk(-32, 64, content)
+    File.exists?(File.join(@temp_dir, 'r.-1.2.mcr')).should be_true
+    File.exists?(File.join(@temp_dir, 'r.-2.2.mcr')).should be_false
   end
 end

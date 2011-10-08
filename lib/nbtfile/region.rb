@@ -170,19 +170,34 @@ class RegionFile
 end
 
 class RegionManager
+  module Private #:nodoc: all
+    REGION_WIDTH_IN_CHUNKS = RegionFile::Private::REGION_WIDTH_IN_CHUNKS
+  end
+  include Private
+
   def initialize(region_dir)
     @region_dir = region_dir
   end
 
+  def get_region_file(x, z)
+    r_x = x.to_i / REGION_WIDTH_IN_CHUNKS
+    r_z = z.to_i / REGION_WIDTH_IN_CHUNKS
+    filename = "r.#{r_x}.#{r_z}.mcr"
+    RegionFile.new(File.join(@region_dir, filename))
+  end
+
   def store_chunk(x, z, content)
-    region_file = RegionFile.new(File.join(@region_dir, 'r.0.0.mcr'))
-    region_file.store_chunk(x, z, content)
+    region_file = get_region_file(x, z)
+    region_file.store_chunk(x % REGION_WIDTH_IN_CHUNKS,
+                            z % REGION_WIDTH_IN_CHUNKS,
+                            content)
     self
   end
 
   def get_chunk(x, z)
-    region_file = RegionFile.new(File.join(@region_dir, 'r.0.0.mcr'))
-    region_file.get_chunk(x, z)
+    region_file = get_region_file(x, z)
+    region_file.get_chunk(x % REGION_WIDTH_IN_CHUNKS,
+                          z % REGION_WIDTH_IN_CHUNKS)
   end
 end
 
