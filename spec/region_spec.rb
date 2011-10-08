@@ -74,3 +74,27 @@ describe NBTFile::RegionFile do
     Set.new(@region_file.live_chunks).should == Set[[0, 0], [1, 0], [0, 2]]
   end
 end
+
+describe NBTFile::RegionManager do
+  before :each do
+    @temp_dir = "tmp_regions"
+    FileUtils.mkdir_p(@temp_dir)
+    @region_manager = NBTFile::RegionManager.new(@temp_dir)
+  end
+
+  after :each do
+    FileUtils.rm_rf(@temp_dir)
+  end
+
+  it "should allow storing and retrieving chunks" do
+    content = "foobar"
+    @region_manager.store_chunk(0, 0, content)
+    @region_manager.get_chunk(0, 0).should == content
+  end
+
+  it "creates a region file" do
+    content = "foobar"
+    @region_manager.store_chunk(0, 0, content)
+    File.exists?(File.join(@temp_dir, 'r.0.0.mcr')).should be_true
+  end
+end

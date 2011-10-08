@@ -169,4 +169,21 @@ class RegionFile
   end
 end
 
+class RegionManager
+  def initialize(region_dir)
+    @region_dir = region_dir
+  end
+
+  def store_chunk(x, z, content)
+    region_file = RegionFile.new(File.join(@region_dir, 'r.0.0.mcr'))
+    region_file.store_chunk(x, z, content)
+    self
+  end
+
+  def get_chunk(x, z)
+    region_file = RegionFile.new(File.join(@region_dir, 'r.0.0.mcr'))
+    region_file.get_chunk(x, z)
+  end
+end
+
 end
