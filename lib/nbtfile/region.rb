@@ -104,7 +104,7 @@ class RegionFile
     end
   end
 
-  def chunks
+  def live_chunks
     @live_chunks.dup
   end
 
